@@ -113,6 +113,14 @@ including the full checked set it sends on connect.
 "Defeat the *boss* OR Unlock with 5 Keys!", so hooking the Guardian's death
 would silently miss every key-opened exit.
 
+**Self-contained save location.** The patch clears the
+`UseAppDataSaveLocation` info flag, which vanilla ships set. That moves
+`working_directory` from `%LOCALAPPDATA%\Vertical Drop Heroes HD\` to the game
+folder, so the modded build keeps `vdh_save_11.ini`, `archipelago.ini` and
+`ap_debug.log` beside its own exe and shares nothing with an untouched Steam
+install. The modded build therefore starts from a blank save rather than
+inheriting Steam unlocks — which is what an Archipelago run wants anyway.
+
 **Offline still works.** Every hook is guarded by `global.ap_enabled`, and an
 install with no `Slot` configured never even calls `external_define`. A missing
 DLL cannot break a vanilla playthrough.
@@ -140,6 +148,10 @@ untested. See "Known unknowns" below.
   the game folder, which is where `build.py` puts it. If the runner instead
   looks in the save area, set `DllPath` to an absolute path in
   `archipelago.ini`.
+- **`ap_debug.log`** is written beside the exe on every launch, fresh each run.
+  It records how far `ap_boot` got and what the ini contained. If the mod
+  appears to do nothing, read that file first -- if it does not exist at all,
+  the patched `data.win` is not the one that ran.
 - **DeathLink** is exposed as a slot option and passed through `slot_data`, but
   is *not* wired in the GML. Nothing sends or receives it yet.
 - **Trap item** (`Fragile Hero Trap`) sets `global.ap_pending_trap` but nothing

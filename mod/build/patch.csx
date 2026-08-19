@@ -10,11 +10,34 @@
 using System;
 using System.IO;
 using UndertaleModLib.Compiler;
+using UndertaleModLib.Models;
 
 string here = Path.GetDirectoryName(ScriptPath);
 string gmlDir = Path.GetFullPath(Path.Combine(here, "..", "gml"));
 
 string Gml(string name) => File.ReadAllText(Path.Combine(gmlDir, name + ".gml"));
+
+// ---------------------------------------------------------------------------
+// 0. Self-contained save location
+// ---------------------------------------------------------------------------
+// Vanilla ships with UseAppDataSaveLocation set, so saves and ini files go to
+// %LOCALAPPDATA%\Vertical Drop Heroes HD\ -- shared with the untouched Steam
+// install. Clearing the flag points working_directory at the game folder
+// instead, so the modded build keeps vdh_save_11.ini, archipelago.ini and
+// ap_debug.log entirely to itself and cannot disturb a Steam playthrough.
+//
+// Side effect worth knowing: the modded build starts from a blank save rather
+// than inheriting your Steam unlocks. For Archipelago that is what you want.
+var infoFlags = Data.GeneralInfo.Info;
+if (infoFlags.HasFlag(UndertaleGeneralInfo.InfoFlags.UseAppDataSaveLocation))
+{
+    Data.GeneralInfo.Info = infoFlags & ~UndertaleGeneralInfo.InfoFlags.UseAppDataSaveLocation;
+    Console.WriteLine("cleared UseAppDataSaveLocation -> saves live beside the exe");
+}
+else
+{
+    Console.WriteLine("UseAppDataSaveLocation already clear");
+}
 
 var g = new CodeImportGroup(Data);
 g.AutoCreateAssets = true;
@@ -28,7 +51,7 @@ g.ThrowOnNoOpFindReplace = true;
 string[] newScripts = {
     "ap_tables", "ap_dll", "ap_boot", "ap_step", "ap_dispatch",
     "ap_receive_item", "ap_apply_state", "ap_check", "ap_mark_sent",
-    "ap_skill_in_stock", "ap_skill_name", "ap_log", "ap_draw",
+    "ap_skill_in_stock", "ap_skill_name", "ap_log", "ap_draw", "ap_debug",
     "ap_shop_check", "ap_shop_open", "ap_level_cleared",
     "ap_shortcut_check", "ap_goal",
 };

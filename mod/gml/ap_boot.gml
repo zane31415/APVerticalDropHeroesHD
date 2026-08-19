@@ -26,7 +26,17 @@ global.ap_log_timer = 0;
 global.ap_err_count = 0;
 global.ap_pending_trap = 0;
 
+// Fresh log each launch, so what you send me is only this run.
+if (file_exists("ap_debug.log"))
+{
+    file_delete("ap_debug.log");
+}
+ap_debug("ap_boot reached");
+ap_debug("working_directory = " + working_directory);
+ap_debug("program_directory = " + program_directory);
+
 ap_tables();
+ap_debug("ap_tables done, loc_count=" + string(global.ap_loc_count));
 
 // --- received-item tallies (recomputed from scratch on every full resend) ---
 global.ap_recv_shop[0] = 0;
@@ -70,11 +80,14 @@ if (global.ap_host == "" && global.ap_slot == "")
     ini_write_string("Archipelago", "Password", "");
 }
 ini_close();
+ap_debug("ini read: host='" + global.ap_host + "' slot='" + global.ap_slot +
+         "' dll='" + global.ap_dll + "'");
 
 if (global.ap_slot == "")
 {
     global.ap_msg = "Archipelago: set Slot in archipelago.ini#" + working_directory;
     global.ap_msg_timer = 900;
+    ap_debug("no Slot configured -> staying dormant (vanilla behaviour)");
     exit;
 }
 if (global.ap_host == "")
@@ -83,7 +96,9 @@ if (global.ap_host == "")
 }
 
 // --- bind the client ------------------------------------------------------
+ap_debug("binding DLL...");
 ap_dll();
+ap_debug("DLL bound OK");
 
 // api_version 1: GM7/8 string syntax. We never use the execute_string path
 // (GM:Studio removed it), so the GMS2 "+200" variant buys nothing here.
@@ -91,6 +106,7 @@ if (!external_call(global.ext_ap_init, 1))
 {
     global.ap_msg = "Archipelago: apclient_init failed";
     global.ap_msg_timer = 600;
+    ap_debug("apclient_init FAILED");
     exit;
 }
 
@@ -104,3 +120,4 @@ global.ap_enabled = 1;
 external_call(global.ext_ap_connect, "", "Vertical Drop Heroes HD", global.ap_host);
 global.ap_msg = "Archipelago: connecting to " + global.ap_host + "...";
 global.ap_msg_timer = 300;
+ap_debug("connect() issued to " + global.ap_host);

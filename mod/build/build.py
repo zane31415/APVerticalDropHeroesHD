@@ -90,7 +90,7 @@ def main():
         print(tail[-4000:])
         sys.exit(f"patch failed (exit {r.returncode})")
     for line in tail.splitlines():
-        if "AP patch applied" in line:
+        if 'AP patch applied' in line or 'UseAppDataSaveLocation' in line:
             print("  " + line.strip())
 
     os.replace(out, target)
