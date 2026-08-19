@@ -92,8 +92,9 @@ def build_patcher():
     return zip_path
 
 
-PLAYER_README = """\
-Vertical Drop Heroes HD - Archipelago patcher
+# Raw string: this text is full of Windows paths, and a stray \a or \V in a
+# normal literal silently mangles them.
+PLAYER_README = r"""Vertical Drop Heroes HD - Archipelago patcher
 =============================================
 
 You need TWO things this archive does not contain, because neither is ours to
@@ -120,14 +121,19 @@ Then:
 
   4. Point build.py at your copy and run it:
 
-       set VDH_GAME_DIR=C:\\path\\to\\your\\Vertical Drop Heroes HD
-       python build\\build.py
+       set VDH_GAME_DIR=C:\path\to\your\Vertical Drop Heroes HD
+       python build\build.py
 
      It patches data.win and copies the DLL in beside the exe.
 
-  5. Launch the game once. It writes archipelago.ini into the GameMaker save
-     area and shows you the exact path on screen. Fill in Host and Slot,
-     then restart.
+  5. Configure the connection. archipelago.ini does NOT go in the game folder;
+     GameMaker keeps it in the save area:
+
+       %LOCALAPPDATA%\Vertical Drop Heroes HD\archipelago.ini
+
+     It is not created until the game has run once. Either launch the game
+     and let it write a template (it prints the path on screen too), or make
+     the folder and file yourself. Fill in Host and Slot, then restart.
 
 If Slot is left blank the mod stays completely dormant and the game plays as
 vanilla -- it does not even load the DLL.

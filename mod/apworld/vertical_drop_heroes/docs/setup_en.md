@@ -55,9 +55,20 @@ Drop `vertical_drop_heroes.apworld` into your Archipelago install's
 There is no in-game connect screen; connection details come from a config
 file.
 
-Launch the game once. It writes a template `archipelago.ini` and shows you the
-full path to it on screen (GameMaker puts it in the save area, not the game
-folder). Fill it in:
+`archipelago.ini` does **not** live in the game folder. GameMaker writes it to
+the save area, which on Windows is:
+
+```
+%LOCALAPPDATA%\Vertical Drop Heroes HD\archipelago.ini
+```
+
+(That folder name comes from the game's own GEN8 `filename` field, not from
+your install path -- it is the same regardless of where you put the game.)
+
+The file does not exist until the game has been run at least once. Either
+launch the game once and let it write a template -- it also prints the full
+path on screen -- or create the folder and file yourself now. Either way, fill
+it in:
 
 ```ini
 [Archipelago]
