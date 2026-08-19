@@ -1,0 +1,19 @@
+# --- the game itself -------------------------------------------------------
+# Never commit game files. data.win is the game's own content, and a patched
+# data.win is a derivative of it -- ship the patcher, not the patched game.
+Vertical Drop Heroes HD/
+
+# --- third-party binaries (build inputs, fetched not vendored) -------------
+mod/build/utmt/
+gm-apclientpp.dll
+
+# --- build outputs ---------------------------------------------------------
+# Everything in out/ is reproducible: python mod/build/package.py
+out/
+mod/build/verify/
+mod/build/build.log
+*.apworld
+
+# --- python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]

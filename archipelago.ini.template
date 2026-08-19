@@ -1,0 +1,13 @@
+; Template for archipelago.ini
+;
+; The game writes its own copy of this into the GameMaker save area on first
+; run and displays the exact path on screen. Edit that copy, not this one.
+
+[Archipelago]
+Host=archipelago.gg:38281
+Slot=
+Password=
+
+; Optional. Only needed if the runner will not resolve the bare DLL name
+; against the game folder.
+;DllPath=C:\path\to\gm-apclientpp.dll
