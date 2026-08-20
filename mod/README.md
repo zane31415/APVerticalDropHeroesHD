@@ -101,13 +101,23 @@ through `apclient_json_number_at` / `apclient_json_proxy`. See
 because Archipelago replays your entire item history on every connect —
 replaying into a tally is idempotent, replaying into `hpmax += 7` is not.
 
-**The Merchant's stock predicate changed.** Vanilla offered skills whose
-unlock flag was 0. Under AP that is wrong in both directions: a skill the
-server granted would disappear from the shop while its location was still
-unchecked, and a checked location would be offered forever. So `set_merchant`
-now filters on "location not yet checked" (`global.ap_sent_skill`), which is
-fed both by our own checks and by the server's `ap_location_checked` event —
-including the full checked set it sends on connect.
+**Merchant locations are purchase order, not skill identity.** Naming them
+`Unlock: <skill>` made all 50 sphere 0, because you can buy any offered skill
+on level 1 and no honest requirement could be attached. They are now
+`Level N Merchant Unlock M`, keyed to how many unlocks you have bought.
+
+That gate is the game's own. `spawn_shop` caps unlocks at
+`(global.unlocked + merchantSpawned) < min(50, enemyLevel * 5)`, so the Nth
+unlock is unreachable until level `ceil(N/5)`. Exposing an existing constraint
+beats inventing a parallel one. Sphere 0 fell from 82 locations to 47.
+
+**Prices come from purchases made, not items received.** Vanilla priced the hub
+shops off `global.<x>level`, which AP drives from received items — so checking
+five tiers while receiving none would have meant paying tier-1 prices forever.
+The same applies to `global.unlocked`, which sets both the unlock price and the
+merchant spawn cap above, so `ap_refresh_counters` keeps it equal to locations
+checked. Anything the player's *progress* should scale with has to count
+checks; only the player's *power* counts items.
 
 **Level clears key to the portal, not the boss.** The portal tile reads
 "Defeat the *boss* OR Unlock with 5 Keys!", so hooking the Guardian's death
@@ -133,6 +143,8 @@ DLL cannot break a vanilla playthrough.
 
 ## Verified
 
+Statically:
+
 - DLL/exe architecture match (both PE `014c`; the 64-bit DLL will not load).
 - `__cdecl` calling convention, from `include/gm-apclientpp.h`.
 - Patch applies with `ThrowOnNoOpFindReplace = true`, so every find/replace
@@ -143,24 +155,36 @@ DLL cannot break a vanilla playthrough.
   until a run starts.
 - Patched `data.win` decompiles back with every hook in place.
 - Item/location balance is non-negative across all 12 option combinations.
-- Logic is solvable across all 36 option combinations (50 sphere-0 locations).
+- Logic solvable across all 36 option combinations; 47 sphere-0 locations
+  spread across all four categories; deepest requirement 8 of 15 upgrades.
 
-## Not verified
+At runtime:
 
-The game has **not been run**. Everything above is static analysis and
-round-trip verification of the rebuilt `data.win`. The runtime behaviour of
-`external_define` against the DLL, and the live protocol exchange, are
-untested. See "Known unknowns" below.
+- Connects to a live server, sends checks and receives items across all
+  categories (merchant unlocks, all three hub shops, shortcuts, level clears).
+
+## Getting there: the Steam DRM trap
+
+The shipped exe is Steam-DRM-wrapped. It calls
+`SteamAPI_RestartAppIfNecessary(311480)` on launch, Steam takes over, and Steam
+runs *its own* registered copy from `steamapps\common` — so double-clicking a
+patched exe silently runs the UNPATCHED Steam install. Every symptom pointed
+inward (no log file, invisible overlay, ini ignored, saves still in `%APPDATA%`)
+while the actual cause was that the patched `data.win` was never loaded at all.
+
+`build.py` now writes `steam_appid.txt` beside the exe, which makes that check
+return false so the local copy runs.
+
+The tell, in hindsight: clearing `UseAppDataSaveLocation` — a *runner-level*
+header flag, nothing to do with any GML — also appeared to do nothing. When a
+change at that layer has no effect, the runner is not reading your file, and no
+amount of fixing things inside the file will help.
 
 ## Known unknowns / next steps
 
-- **DLL path resolution.** GM:S 1.4 normally resolves a bare DLL name against
-  the game folder, which is where `build.py` puts it. If the runner instead
-  looks in the save area, set `DllPath` to an absolute path in
-  `archipelago.ini`.
 - **`ap_debug.log`** is written beside the exe on every launch, fresh each run.
   It records how far `ap_boot` got and what the ini contained. If the mod
-  appears to do nothing, read that file first -- if it does not exist at all,
+  appears to do nothing, read that file first — if it does not exist at all,
   the patched `data.win` is not the one that ran.
 - **DeathLink** is exposed as a slot option and passed through `slot_data`, but
   is *not* wired in the GML. Nothing sends or receives it yet.
