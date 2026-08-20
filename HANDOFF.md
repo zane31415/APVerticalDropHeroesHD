@@ -3,7 +3,7 @@
 Context dump for continuing this work in a fresh session. Written 2026-08-19.
 
 **Status: working.** The mod connects to a live server, sends checks and
-receives items across every category. Last commit `1330f97`.
+receives items across every category. Last commit `258a6ce`.
 
 ---
 
@@ -141,6 +141,14 @@ replaying into `hpmax += 7` is not.
 server. Clearing only the first let slot A's checked set leak into slot B.
 Safe because apclientpp replays the full checked set right after
 `ap_slot_connected`, omitting it only when genuinely empty.
+
+**Shortcuts cost nothing.** `ap_shortcut_cost()` (enable) and
+`ap_teleport_cost()` (use) both return 0 under AP; six call sites replaced.
+
+**Every connect resets state.** `ap_connect_now` clears tallies, sent-state and
+re-applies derived stats unconditionally -- not just on reconnect. A first
+connect skipping this let `save_game("load")` values from the previous run
+build the first hero.
 
 **Progress counts checks; power counts items.** Prices and the merchant spawn
 cap derive from locations *checked* (`ap_shop_price`, `ap_refresh_counters`

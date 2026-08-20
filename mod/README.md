@@ -151,6 +151,22 @@ merchant spawn cap above, so `ap_refresh_counters` keeps it equal to locations
 checked. Anything the player's *progress* should scale with has to count
 checks; only the player's *power* counts items.
 
+**Shortcuts are free.** Enabling a crystal is a location check, and using the
+Teleportation Shrine spends a Progressive Shortcut the server already granted,
+so charging coins for either taxes core traversal rather than gating anything.
+Replaced at all six sites so no readout can disagree with what is charged. This
+also kills a vanilla display bug: `global.skipFunds` persists in the save and
+accumulates across partial payments, so once it exceeded the cost the readout
+went negative ("-,118").
+
+**Every connect starts from a blank slate.** The reset used to live in the
+reconnect branch only, so a *first* connect skipped it -- and `save_game("load")`
+on btnStartMenu Create had already restored the previous run's
+dlevel/hlevel/plevel from the ini. Pressing Single Player then built that run's
+first hero with stale upgrades. The reset is now unconditional and runs
+synchronously before `room_goto`, so the hero is built from baseline and the
+server's items raise it from there.
+
 **Level clears key to the portal, not the boss.** The portal tile reads
 "Defeat the *boss* OR Unlock with 5 Keys!", so hooking the Guardian's death
 would silently miss every key-opened exit.

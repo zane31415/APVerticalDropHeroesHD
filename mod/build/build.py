@@ -58,6 +58,13 @@ def find_dll():
     return None
 
 
+def _same_file(a, b):
+    if os.path.getsize(a) != os.path.getsize(b):
+        return False
+    with open(a, "rb") as fa, open(b, "rb") as fb:
+        return fa.read() == fb.read()
+
+
 def find_utmt():
     env = os.environ.get("UTMT_CLI")
     if env:
@@ -114,8 +121,20 @@ def main():
 
     dll = find_dll()
     if dll:
-        shutil.copy2(dll, os.path.join(game, "gm-apclientpp.dll"))
-        print("copied gm-apclientpp.dll into the game folder")
+        dst = os.path.join(game, "gm-apclientpp.dll")
+        if os.path.isfile(dst) and _same_file(dll, dst):
+            print("gm-apclientpp.dll already up to date")
+        else:
+            try:
+                shutil.copy2(dll, dst)
+                print("copied gm-apclientpp.dll into the game folder")
+            except PermissionError:
+                # Almost always "the game is still running and has the DLL
+                # loaded". data.win is already written, so this is a warning
+                # rather than a failure.
+                print("NOTE: could not replace gm-apclientpp.dll (in use). "
+                      "Close the game and re-run if the DLL itself changed; "
+                      "data.win is already patched either way.")
     else:
         print("WARNING: gm-apclientpp.dll not found.\n"
               "         Get the 32-BIT build from\n"

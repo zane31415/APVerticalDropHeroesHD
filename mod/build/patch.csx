@@ -57,7 +57,8 @@ string[] newScripts = {
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
     "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
-    "ap_shortcut_open", "ap_scout_name", "ap_scout_request",
+    "ap_shortcut_open", "ap_shortcut_cost", "ap_teleport_cost",
+    "ap_scout_name", "ap_scout_request",
     "ap_desc_suffix", "ap_title_fix",
     "ap_connect_now", "ap_connect_on_start",
     "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
@@ -217,6 +218,30 @@ g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
 g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
     "draw_text(x, y - 30, txt_title);",
     "draw_text(x, y - 30, ap_title_fix(txt_title, target));");
+
+// Shortcuts are free under Archipelago: enabling a crystal is a location
+// check and using the Teleportation Shrine spends a Progressive Shortcut the
+// server already granted, so charging for either taxes core traversal.
+// Replaced everywhere (both activate_block arms, the loop_tile affordability
+// pip, and the two cost readouts) so no site can disagree about the price.
+// The max(0, ...) guards the readouts: global.skipFunds persists in the save
+// and could exceed the cost, which is what produced the negative "-,118".
+g.QueueFindReplace("gml_Script_activate_block",
+    "((global.enemyLevel + 1) * (3 + (5 * global.gameDone)))", "ap_teleport_cost()");
+g.QueueFindReplace("gml_Script_loop_tile",
+    "((global.enemyLevel + 1) * (3 + (5 * global.gameDone)))", "ap_teleport_cost()");
+g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
+    "comma_coder((global.enemyLevel + 1) * (3 + (5 * global.gameDone)))",
+    "comma_coder(ap_teleport_cost())");
+
+g.QueueFindReplace("gml_Script_activate_block",
+    "(global.enemyLevel * 50)", "ap_shortcut_cost()");
+g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
+    "comma_coder((global.enemyLevel * 50) - global.skipFunds)",
+    "comma_coder(max(0, ap_shortcut_cost() - global.skipFunds))");
+g.QueueFindReplace("gml_Object_obTile_Draw_0",
+    "string((global.enemyLevel * 50) - global.skipFunds)",
+    "string(max(0, ap_shortcut_cost() - global.skipFunds))");
 
 // -- level clear ------------------------------------------------------------
 // `global.portalDelay = 15;` appears twice (real portal + NG+ statue warp),

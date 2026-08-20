@@ -37,17 +37,24 @@ if (!global.ap_dll_bound)
 }
 else
 {
-    // Reconnecting, possibly to a DIFFERENT slot: drop the old socket and
-    // every scrap of slot-specific state with it, so nothing from the previous
-    // server survives the gap before the new one reports in.
+    // Reconnecting, possibly to a different slot: drop the old socket first.
     external_call(global.ext_ap_disconnect);
-    global.ap_ready = 0;
-    global.ap_status_sent = 0;
-    global.ap_scout_sent = 0;
-    ap_reset_tallies();
-    ap_reset_sent();
-    ap_apply_state();
 }
+
+// EVERY connect, first or not, starts from a blank slate.
+//
+// This used to sit in the else branch, so a first connect skipped it -- and
+// save_game("load") on btnStartMenu Create had already restored the PREVIOUS
+// run's dlevel/hlevel/plevel from the ini. Pressing Single Player then built
+// the first hero of the run with stale upgrades before any item arrived.
+// Zeroing here happens synchronously, before room_goto, so the hero is built
+// from baseline and the server's items raise it from there.
+global.ap_ready = 0;
+global.ap_status_sent = 0;
+global.ap_scout_sent = 0;
+ap_reset_tallies();
+ap_reset_sent();
+ap_apply_state();
 
 global.ap_enabled = 1;
 global.ap_err_count = 0;
