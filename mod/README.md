@@ -114,23 +114,34 @@ and omits it only when the set is genuinely empty.
 `Unlock: <skill>` made all 50 sphere 0, because you can buy any offered skill
 on level 1 and no honest requirement could be attached. They are now
 `Level N Merchant Unlock M`, and a Merchant on level L fills one of *L's own*
-five slots. Keying to global
-purchase order instead meant a merchant found on level 3 handed out "Level 1
-Merchant Unlock 5" just because that was the next number -- and a skipped
-level-1 slot could then only ever be cleared by returning to level 1. If L's
-five are taken it falls back to the deepest unfinished level below, which is
-sound because standing on L proves everything below L is reachable.
+five slots and nothing else. Keying to global purchase order instead meant a
+merchant found on level 3 handed out "Level 1 Merchant Unlock 5" just because
+that was the next number.
+
+There is deliberately no falling back to shallower levels when L's five are
+taken. This is a roguelite: the player re-runs earlier levels constantly, so a
+slot left behind on level 1 is picked up on the next descent rather than being
+stranded. Letting a deep Merchant mop up shallow slots would only make deep
+runs do double duty and blur which level a location belongs to.
 
 **Logic is two linear curves, 1.5 shop tiers per level.** A level offers
 `floor(1.5 * L)` tiers of each shop, so all fifteen are on sale by level 10.
 Reaching level L demands what the levels below it offered,
-`floor(1.5 * (L - 1))` of both Progressive Damage and Progressive Max HP.
+`floor(1.5 * (L - 1))` of each of Progressive Damage, Progressive Max HP and
+Progressive Orb XP.
 Level 1 demands nothing, which is what makes sphere 0 exactly the five level-1
 merchant unlocks, the first tier of each shop, and "Level 1 Cleared".
 
-Progressive Orb XP is deliberately *not* a requirement: it scales pacifist-orb
-XP, not survivability, so demanding it would assert a dependency that does not
-exist.
+All three shop items are required, Orb XP included: pacifist orbs are a primary
+source of hero levels and levels scale everything, so orb XP is survivability
+as much as max HP is, and it costs the same at the shop.
+
+So the goal requires all fifteen of all three, and that is the point rather
+than a side effect. An access rule is a claim about what must not be placed
+*behind* a location. Without it, generation would be free to bury a Progressive
+Damage behind the goal check, leaving a less-skilled player unable to finish.
+Verified feasible: at every level the locations reachable one tier down exceed
+3 x the requirement, with headroom from 6 slots at level 2 to 69 at level 11.
 
 **Prices come from purchases made, not items received.** Vanilla priced the hub
 shops off `global.<x>level`, which AP drives from received items — so checking

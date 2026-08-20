@@ -11,8 +11,8 @@ have been able to buy ``floor(1.5 * L)`` tiers of each hub shop:
 So all fifteen tiers of each shop are purchasable by level 10.
 
 **What a level demands.** Reaching level L expects the tiers the levels below
-it offered, i.e. ``floor(1.5 * (L - 1))`` of both Progressive Damage and
-Progressive Max HP:
+it offered, i.e. ``floor(1.5 * (L - 1))`` of each of Progressive Damage,
+Progressive Max HP and Progressive Orb XP:
 
     level   1  2  3  4  5  6  7  8  9 10 11
     need    0  1  3  4  6  7  9 10 12 13 15
@@ -20,12 +20,18 @@ Progressive Max HP:
 Level 1 demands nothing, which is what puts the five level-1 merchant unlocks,
 the first tier of each shop, and "Level 1 Cleared" in sphere 0.
 
-Progressive Orb XP is not a requirement. It scales pacifist-orb XP gain, not
-survivability, so demanding it would be claiming a dependency that does not
-exist. It is still progression because it gates its own shop's locations.
+Orb XP counts. Pacifist orbs are a primary source of hero levels and levels
+scale everything, so orb XP is survivability just as much as max HP is -- and
+it costs the same at the shop, so it belongs on the same curve.
 
-Progressive Shortcut is likewise not a requirement: it lets you *start* deeper
-but grants no power, so it cannot substitute for being able to survive there.
+The goal therefore requires all fifteen of all three. That is the point rather
+than a side effect: an access rule is a statement about what must not be placed
+*behind* a location. If the goal did not require them, generation would be free
+to bury a Progressive Damage behind the goal check, and a player who needed
+that damage to finish would be stuck.
+
+Progressive Shortcut is deliberately not a requirement: it lets you *start*
+deeper but grants no power, so it cannot substitute for surviving down there.
 """
 
 import math
@@ -60,7 +66,8 @@ def can_reach_level(state: CollectionState, player: int, level: int) -> bool:
     if need <= 0:
         return True
     return (state.has("Progressive Damage", player, need)
-            and state.has("Progressive Max HP", player, need))
+            and state.has("Progressive Max HP", player, need)
+            and state.has("Progressive Orb XP", player, need))
 
 
 def set_rules(world, options) -> None:

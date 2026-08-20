@@ -90,10 +90,10 @@ vanilla.
 ## What changed in the game
 
 - **The Merchant** sells unlock purchases rather than specific skills. A
-  Merchant standing on level L fills one of *that level's* five slots, so you
-  never have to go back to a shallow level to mop up a slot you skipped. If
-  level L's five are all taken, it falls back to the deepest unfinished level
-  below. The traits and powers themselves arrive as Archipelago items.
+  Merchant standing on level L fills one of *that level's* five slots -- level
+  1's five are on level 1, and only there. Once a level's five are taken, its
+  Merchants have nothing left to sell. The traits and powers themselves arrive
+  as Archipelago items.
 - **Every shop shows what you are buying.** The Blacksmith, Apothecary, Monk
   and Merchant each display the actual item sitting on their next location,
   including whose world it belongs to.
