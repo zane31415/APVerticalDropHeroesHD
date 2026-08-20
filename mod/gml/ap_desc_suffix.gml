@@ -3,7 +3,9 @@
 //
 // Hooked into obInfoBar's draw_text_ext call rather than the localisation
 // branches above it, so it applies to every language without touching any of
-// them.
+// them. That single hook sees EVERY info-bar target, though -- shrines,
+// statues, portals, quest givers -- so it must say nothing at all unless the
+// target is actually one of the four Archipelago vendors.
 
 var desc = argument0;
 var tgt = argument1;
@@ -13,6 +15,7 @@ if (!global.ap_enabled || tgt == -4)
     return desc;
 }
 
+var is_vendor = 1;
 var lid = -1;
 if (tgt.sprite_index == sprNPC_Blacksmith)
 {
@@ -34,7 +37,15 @@ else if (tgt.sprite_index == sprNPC_Merchant)
         lid = global.ap_unlock_loc[n];
     }
 }
+else
+{
+    is_vendor = 0;
+}
 
+if (!is_vendor)
+{
+    return desc;
+}
 if (lid < 0)
 {
     return desc + "##AP: sold out";

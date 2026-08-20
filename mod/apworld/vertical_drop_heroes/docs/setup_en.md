@@ -73,6 +73,11 @@ goes back. Fields are saved as you leave them, so the details persist across
 restarts, and `Connect` can be used again at any time to retarget a different
 server without restarting the game.
 
+You do not have to press `Connect`: if a Slot is filled in, choosing **Single
+Player** connects automatically as the run starts. The mod deliberately does
+*not* connect at launch, so the server's checked-location set never lands on
+top of a session already in progress.
+
 Status is shown live on that page, and as a small readout in the top-left
 during play: `connecting` -> `handshaking` -> `connected`.
 

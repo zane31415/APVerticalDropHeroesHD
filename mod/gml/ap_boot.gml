@@ -112,8 +112,13 @@ if (global.ap_host == "")
     global.ap_host = "localhost:38281";
 }
 
-// --- connect ---------------------------------------------------------------
-// Connection details can also be changed later from Options > Archipelago,
-// which calls ap_connect_now() again; keeping the logic in one place means the
-// boot path and the menu path cannot drift.
-ap_connect_now();
+// --- deliberately NOT connecting here --------------------------------------
+// Connecting at boot dropped the server's checked-location set on top of
+// whatever the player was already doing, and ap_apply_state overwrote
+// in-progress unlocks and shop levels. The connection is now made when a run
+// actually starts (ap_connect_on_start, hooked to Single Player) or when the
+// player hits Connect under Options > Archipelago. Both routes call
+// ap_connect_now(), so the logic still lives in one place.
+global.ap_msg = "Archipelago: ready (" + global.ap_slot + ")";
+global.ap_msg_timer = 240;
+ap_debug("configured for slot '" + global.ap_slot + "'; connecting on run start");

@@ -24,8 +24,11 @@ if (global.menu_page == 2)
         draw_set_color(make_color_rgb(50, 50, 50));
         draw_set_font(fnInterfaceSmall);
     }
-    draw_set_halign(fa_left);
+    // Vanilla draws every Options row centred on x=1130; matching it keeps the
+    // new row from looking right-aligned next to the others.
+    draw_set_halign(fa_center);
     draw_text(1130, 505, "Archipelago");
+    draw_set_halign(fa_left);
     exit;
 }
 

@@ -57,7 +57,8 @@ string[] newScripts = {
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_scout_name", "ap_scout_request", "ap_desc_suffix",
-    "ap_connect_now", "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
+    "ap_connect_now", "ap_connect_on_start",
+    "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
     "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
 };
 foreach (string s in newScripts)
@@ -106,6 +107,17 @@ g.QueueAppend("gml_Object_btnStartMenu_Draw_0", "ap_draw(); ap_menu_draw();");
 g.QueueAppend("gml_Object_obGameControl_Create_0", "ap_boot();");
 g.QueueAppend("gml_Object_obGameControl_Step_0", "ap_step();");
 g.QueueAppend("gml_Object_obGameControl_Draw_64", "ap_draw();");
+
+// Connect only when a run actually starts. Doing it at boot meant the server's
+// checked-location set arrived while the player was mid-session and
+// ap_apply_state overwrote their in-progress unlocks and shop levels.
+// Split Screen is left alone: co-op is untested with Archipelago.
+g.QueueFindReplace("gml_Object_btnStartMenu_Step_0",
+@"global.COOP = 0;
+                room_goto(rmScroll);",
+@"global.COOP = 0;
+                ap_connect_on_start();
+                room_goto(rmScroll);");
 
 // ---------------------------------------------------------------------------
 // 4. Location checks
