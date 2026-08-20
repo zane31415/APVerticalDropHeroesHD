@@ -6,15 +6,13 @@
 
 var lid = argument0;
 
-for (var g = 0; g < 3; g += 1)
+for (var i = 1; i <= global.ap_unlock_total; i += 1)
 {
-    for (var i = 0; i < global.ap_skill_count[g]; i += 1)
+    if (global.ap_unlock_loc[i] == lid)
     {
-        if (global.ap_skill_loc[g, i] == lid)
-        {
-            global.ap_sent_skill[g, i] = 1;
-            exit;
-        }
+        global.ap_sent_unlock[i] = 1;
+        ap_refresh_counters();
+        exit;
     }
 }
 

@@ -23,6 +23,15 @@ SEARCH = [os.path.abspath(os.path.join(HERE, "..")),
 
 GAME_DIR_NAME = "Vertical Drop Heroes HD"
 
+# Steam AppID for Vertical Drop Heroes HD (from appmanifest_311480.acf).
+#
+# The shipped exe is Steam-DRM-wrapped: on launch it calls
+# SteamAPI_RestartAppIfNecessary, Steam takes over, and Steam starts *its own*
+# registered copy from steamapps\common -- so double-clicking a patched exe
+# silently runs the UNPATCHED Steam install instead. Dropping steam_appid.txt
+# next to the exe makes that check return false, and the local copy runs.
+STEAM_APPID = "311480"
+
 
 def find_game_dir():
     env = os.environ.get("VDH_GAME_DIR")
@@ -95,6 +104,13 @@ def main():
 
     os.replace(out, target)
     print(f"wrote {target}")
+
+    # Without this the Steam DRM wrapper hands off to Steam and the unpatched
+    # Steam copy runs instead of this one.
+    appid_path = os.path.join(game, "steam_appid.txt")
+    with open(appid_path, "w", encoding="ascii", newline="") as f:
+        f.write(STEAM_APPID)
+    print(f"wrote steam_appid.txt ({STEAM_APPID}) so the DRM wrapper runs THIS copy")
 
     dll = find_dll()
     if dll:

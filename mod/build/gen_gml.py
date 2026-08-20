@@ -49,11 +49,13 @@ def main():
         g = GROUP_INDEX[kind]
         a(f"global.ap_skill_count[{g}] = {len(names)};")
     a("")
+    # merchant unlock locations, indexed 1..50 in purchase order
     for name, lid, cat, meta in defs.LOCATIONS:
-        if cat != "skill":
-            continue
-        g = GROUP_INDEX[meta["kind"]]
-        a(f"global.ap_skill_loc[{g}, {meta['index']}] = {lid};")
+        if cat == "unlock":
+            a(f"global.ap_unlock_loc[{meta['order']}] = {lid};")
+            a(f"global.ap_unlock_level[{meta['order']}] = {meta['level']};")
+    a(f"global.ap_unlock_total = {defs.TOTAL_SKILLS};")
+    a(f"global.ap_unlocks_per_level = {defs.UNLOCKS_PER_LEVEL};")
     a("")
     for name, iid, cls, cnt, meta in defs.ITEMS:
         if "skill" not in meta:

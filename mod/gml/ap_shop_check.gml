@@ -1,21 +1,13 @@
-// ap_shop_check(shop_index) -- called when the player buys from a between-run
-// merchant. 0=Blacksmith(dmg) 1=Apothecary(hp) 2=Monk(orb xp).
-//
-// The tier checked is "the next unchecked tier", not the current <x>level:
-// under AP the level counter is driven by received items, so it cannot double
-// as a purchase counter.
+// ap_shop_check(shop) -- the player bought from a hub merchant.
+// 0=Blacksmith(damage) 1=Apothecary(max HP) 2=Monk(orb XP).
 
 if (!global.ap_enabled)
 {
     exit;
 }
-
-var s = argument0;
-for (var t = 1; t <= global.ap_max_shop_tier; t += 1)
+var t = ap_shop_next_tier(argument0);
+if (t > 0)
 {
-    if (global.ap_sent_shop[s, t] < 1)
-    {
-        ap_check(global.ap_shop_loc[s, t]);
-        exit;
-    }
+    global.ap_sent_shop[argument0, t] = 1;
+    ap_check(global.ap_shop_loc[argument0, t]);
 }

@@ -25,6 +25,10 @@ global.ap_log_count = 0;
 global.ap_log_timer = 0;
 global.ap_err_count = 0;
 global.ap_pending_trap = 0;
+// Always populated, even on the early-exit paths, so ap_draw can report
+// where the mod is actually reading and writing.
+global.ap_diag_dir = working_directory;
+global.ap_diag_ini = "(not read yet)";
 
 // Fresh log each launch, so what you send me is only this run.
 if (file_exists("ap_debug.log"))
@@ -64,6 +68,15 @@ for (var l = 0; l <= global.ap_final_level; l += 1)
     global.ap_sent_clear[l] = 0;
 }
 global.ap_sent_goal = 0;
+for (var i = 1; i <= global.ap_unlock_total; i += 1)
+{
+    global.ap_sent_unlock[i] = 0;
+}
+global.ap_scout_sent = 0;
+for (var i = 0; i < global.ap_loc_count; i += 1)
+{
+    global.ap_scout[i] = "";
+}
 
 // --- config ---------------------------------------------------------------
 ini_open("archipelago.ini");
@@ -82,6 +95,7 @@ if (global.ap_host == "" && global.ap_slot == "")
 ini_close();
 ap_debug("ini read: host='" + global.ap_host + "' slot='" + global.ap_slot +
          "' dll='" + global.ap_dll + "'");
+global.ap_diag_ini = "host='" + global.ap_host + "' slot='" + global.ap_slot + "'";
 
 if (global.ap_slot == "")
 {

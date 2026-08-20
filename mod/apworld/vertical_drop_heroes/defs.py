@@ -43,6 +43,20 @@ SKILL_GROUPS = [
     ("power2", "p2", POWERS_2),
 ]
 
+TOTAL_SKILLS = len(TRAITS) + len(POWERS_1) + len(POWERS_2)   # 50
+
+# --- merchant unlocks -------------------------------------------------------
+# The skills are ITEMS. The LOCATIONS are the merchant purchases that pay for
+# them, and those are already depth-gated by the vanilla game:
+#
+#   spawn_shop: (global.unlocked + merchantSpawned) < min(50, enemyLevel * 5)
+#
+# so the Nth unlock you ever buy is impossible until you reach level
+# ceil(N / 5). Naming locations by that level makes the existing constraint
+# legible to Archipelago's logic instead of inventing a parallel one.
+UNLOCKS_PER_LEVEL = 5
+UNLOCK_LEVELS = TOTAL_SKILLS // UNLOCKS_PER_LEVEL            # 10
+
 # --- between-run shops ------------------------------------------------------
 # Each is an unbounded global.<x>level counter in the vanilla game; we cap it
 # at MAX_SHOP_TIERS tiers and hand out the increments as progression items.
@@ -93,10 +107,13 @@ def build_locations():
     """Returns list of (name, id, category, meta)."""
     nxt = _seq(BASE_ID)
     out = []
-    for kind, arr, names in SKILL_GROUPS:
-        for idx, name in enumerate(names):
-            out.append((f"Unlock: {name}", nxt(), "skill",
-                        {"kind": kind, "arr": arr, "index": idx, "skill": name}))
+    # Merchant purchases, numbered 1..50 overall and grouped by the level that
+    # the vanilla spawn cap first makes them reachable on.
+    for i in range(1, TOTAL_SKILLS + 1):
+        lvl = -(-i // UNLOCKS_PER_LEVEL)          # ceil
+        slot = i - (lvl - 1) * UNLOCKS_PER_LEVEL
+        out.append((f"Level {lvl} Merchant Unlock {slot}", nxt(), "unlock",
+                    {"order": i, "level": lvl, "slot": slot}))
     for key, glob, disp, sprite, _item in SHOPS:
         for tier in range(1, MAX_SHOP_TIERS + 1):
             out.append((f"{disp} Upgrade {tier}", nxt(), "shop",

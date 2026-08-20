@@ -1,19 +1,42 @@
 // REPLACES gml_Script_set_merchant.
 //
-// Vanilla stocked the Merchant with skills whose unlock flag was still 0.
-// Under Archipelago that is the wrong predicate in both directions: a skill
-// granted by the server would vanish from the shop while its location was
-// still unchecked, and a checked location would keep being offered forever.
-// So under AP we filter on "location not yet checked" instead.
+// Vanilla stocked the Merchant with a random skill whose unlock flag was still
+// 0, and buying it granted that specific skill.
+//
+// Under Archipelago the skill is the ITEM, so what the Merchant sells is just
+// "the next unlock purchase" -- location identity is purchase order, not which
+// skill. That is what lets the vanilla depth cap
+// (global.unlocked < min(50, enemyLevel * 5)) act as real logic: the 6th
+// unlock is unreachable until level 2, the 11th until level 3, and so on.
 //
 // argument0 is the decor instance; longtext is the ware category and
-// longtext2 the specific skill, exactly as vanilla.
+// longtext2 the label shown to the player, as vanilla.
 
+if (global.ap_enabled)
+{
+    var n = ap_merchant_next();
+    if (n <= 0)
+    {
+        argument0.longtext = "sold";
+        argument0.longtext2 = "";
+        exit;
+    }
+    argument0.longtext = "unlock";
+    // Prefer the scouted item name; fall back to the location's own name until
+    // the scout reply lands.
+    var nm = ap_scout_name(global.ap_unlock_loc[n]);
+    if (nm == "")
+    {
+        nm = "Unlock " + string(n);
+    }
+    argument0.longtext2 = nm;
+    exit;
+}
+
+// --- offline fallback: vanilla behaviour ----------------------------------
 var wares = ds_list_create();
 var choices = ds_list_create();
 
-// group 0=trait 1=power1 2=power2
-// (declared then indexed separately: GMS1.4 has no array literals)
 var cat_name;
 cat_name[0] = "trait";
 cat_name[1] = "power1";
@@ -37,7 +60,6 @@ for (var g = 0; g < 3; g += 1)
 
 if (ds_list_size(wares) == 0)
 {
-    // Nothing left to sell anywhere.
     argument0.longtext = "sold";
     argument0.longtext2 = "";
     ds_list_destroy(wares);

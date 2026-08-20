@@ -54,6 +54,9 @@ string[] newScripts = {
     "ap_skill_in_stock", "ap_skill_name", "ap_log", "ap_draw", "ap_debug",
     "ap_shop_check", "ap_shop_open", "ap_level_cleared",
     "ap_shortcut_check", "ap_goal",
+    "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
+    "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
+    "ap_shortcut_open", "ap_scout_name", "ap_scout_request", "ap_desc_suffix",
 };
 foreach (string s in newScripts)
     g.QueueReplace("gml_Script_" + s, Gml(s));
@@ -96,15 +99,27 @@ g.QueueAppend("gml_Object_obGameControl_Draw_64", "ap_draw();");
 // -- between-run shops ------------------------------------------------------
 // Stop the sale once all tiers are checked, and let received items (not the
 // purchase) drive the actual stat.
-g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
-    "if (global.coins >= (global.dlevel * global.dprice))",
-    "if (global.coins >= (global.dlevel * global.dprice) && ap_shop_open(0))");
-g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
-    "if (global.coins >= (global.hlevel * global.hprice))",
-    "if (global.coins >= (global.hlevel * global.hprice) && ap_shop_open(1))");
-g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
-    "if (global.coins >= (global.plevel * global.pprice))",
-    "if (global.coins >= (global.plevel * global.pprice) && ap_shop_open(2))");
+// Price every hub-merchant interaction off ap_shop_price(), which counts
+// purchases MADE rather than items RECEIVED. Vanilla used global.<x>level,
+// which AP drives from received items -- so a player who had checked five
+// tiers but received none would have gone on paying tier-1 prices.
+// Sites: the affordability test and the deduction in activate_block, the
+// cost readout in obInfoBar, and the "can afford" pip in loop_tile.
+string[] shopVar = { "dlevel", "hlevel", "plevel" };
+string[] shopPrice = { "dprice", "hprice", "pprice" };
+for (int i = 0; i < 3; i++)
+{
+    string vanilla = $"(global.{shopVar[i]} * global.{shopPrice[i]})";
+    string priced = $"ap_shop_price({i})";
+    g.QueueFindReplace("gml_Script_activate_block",
+        $"global.coins >= {vanilla}", $"global.coins >= {priced} && ap_shop_open({i})");
+    g.QueueFindReplace("gml_Script_activate_block",
+        $"global.coins -= {vanilla}", $"global.coins -= {priced}");
+    g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
+        $"comma_coder{vanilla}", $"comma_coder({priced})");
+    g.QueueFindReplace("gml_Script_loop_tile",
+        $"global.coins >= {vanilla}", $"global.coins >= {priced}");
+}
 
 g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
 @"global.dlevel += 1;
@@ -140,6 +155,31 @@ if (!global.ap_enabled)
 global.skipLevel = global.enemyLevel;
 global.startLevel = global.enemyLevel + 1;
 }");
+
+// Stop the crystal being re-sold once its location is checked. Vanilla gated
+// this on global.skipLevel, which under AP only rises when the server sends a
+// Progressive Shortcut -- so the crystal stayed on offer and the player could
+// pay again and again to re-check the same location.
+g.QueueFindReplace("gml_Script_activate_block",
+    "if ((global.coins + global.skipFunds) >= (global.enemyLevel * 50))",
+    "if ((global.coins + global.skipFunds) >= (global.enemyLevel * 50) && ap_shortcut_open(global.enemyLevel))");
+g.QueueFindReplace("gml_Script_loop_tile",
+    "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && global.enemyLevel < (global.skipLevel - 1))",
+    "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && ap_shortcut_open(global.enemyLevel))");
+
+// -- merchant ---------------------------------------------------------------
+// set_merchant now advertises category "unlock" rather than a specific skill
+// group, because the location is the purchase, not the skill.
+g.QueueFindReplace("gml_Script_activate_block",
+    "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\")",
+    "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\" || sellitem == \"unlock\")");
+
+// -- "what am I buying?" ----------------------------------------------------
+// Hooked at the single draw call rather than in the localisation branches
+// above it, so every language picks it up for free.
+g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
+    "draw_text_ext(x, y - 10, txt_desc, 20, 450);",
+    "draw_text_ext(x, y - 10, ap_desc_suffix(txt_desc, target), 20, 450);");
 
 // -- level clear ------------------------------------------------------------
 // `global.portalDelay = 15;` appears twice (real portal + NG+ statue warp),

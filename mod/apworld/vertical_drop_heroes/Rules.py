@@ -1,11 +1,16 @@
 """Access rules.
 
-The honest shape of this game: almost nothing is *gated*, it is *survivable*.
-You can walk into the Merchant on level 1 and buy any skill he happens to be
-offering, so skill-unlock locations carry no requirement -- inventing one
-would make the logic claim things are needed that demonstrably are not.
+What limits you is depth, and the game says so itself.
 
-What genuinely limits you is depth. Enemies scale hard with global.enemyLevel,
+Merchant unlocks are capped by spawn_shop:
+
+    (global.unlocked + merchantSpawned) < min(50, global.enemyLevel * 5)
+
+so the Nth unlock you ever buy is unreachable until level ceil(N / 5). That is
+a real, pre-existing constraint, not one this world invented, and the "Level N
+Merchant Unlock M" locations are named to expose it.
+
+Beyond that, enemies scale hard with global.enemyLevel,
 and the only permanent power in the game is the Blacksmith's damage and the
 Apothecary's max HP. So depth-dependent locations require those, and they are
 what forms the progression spine.
@@ -73,7 +78,11 @@ def set_rules(world, options) -> None:
             loc.access_rule = (
                 lambda state, l=lvl: can_reach_level(state, player, options, l))
 
-        # category == "skill": no requirement, see module docstring.
+        elif data.category == "unlock":
+            # Depth requirement is the game's own merchant spawn cap.
+            lvl = data.meta["level"]
+            loc.access_rule = (
+                lambda state, l=lvl: can_reach_level(state, player, options, l))
 
     from .defs import FINAL_LEVEL
     multiworld.completion_condition[player] = (

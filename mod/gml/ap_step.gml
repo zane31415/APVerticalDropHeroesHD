@@ -30,6 +30,14 @@ while (guard < 64)
 
 global.ap_state = external_call(global.ext_ap_get_state);
 
+// Scout every location once, as soon as names are resolvable, so the shop UI
+// can say what each purchase will hand over.
+if (global.ap_ready && !global.ap_scout_sent
+    && external_call(global.ext_ap_dp_valid))
+{
+    ap_scout_request();
+}
+
 // Announce PLAYING once the slot is live.
 if (global.ap_ready && !global.ap_status_sent)
 {
