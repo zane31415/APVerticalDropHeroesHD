@@ -1,20 +1,6 @@
 from dataclasses import dataclass
 
-from Options import (Choice, DeathLink, DefaultOnToggle, PerGameCommonOptions,
-                     Range, Toggle)
-
-
-class ShopTiers(Range):
-    """How many upgrade tiers each between-run merchant sells.
-
-    The Blacksmith (damage), Apothecary (max HP) and Monk (orb XP) each get
-    this many locations, and the matching progressive item gets this many
-    copies. Lowering it makes for a shorter game.
-    """
-    display_name = "Shop Tiers"
-    range_start = 5
-    range_end = 15
-    default = 15
+from Options import DeathLink, DefaultOnToggle, PerGameCommonOptions, Range
 
 
 class IncludeShortcuts(DefaultOnToggle):
@@ -35,20 +21,6 @@ class IncludeLevelClears(DefaultOnToggle):
     display_name = "Include Level Clears"
 
 
-class LogicDifficulty(Choice):
-    """How much power the logic assumes you need to reach a given depth.
-
-    relaxed  - expects more upgrades before requiring deep levels
-    standard - a moderate curve
-    tricky   - expects you to push deep with very little
-    """
-    display_name = "Logic Difficulty"
-    option_relaxed = 0
-    option_standard = 1
-    option_tricky = 2
-    default = 1
-
-
 class TrapFill(Range):
     """Percentage of filler slots replaced by traps."""
     display_name = "Trap Fill Percentage"
@@ -59,9 +31,7 @@ class TrapFill(Range):
 
 @dataclass
 class VDHOptions(PerGameCommonOptions):
-    shop_tiers: ShopTiers
     include_shortcuts: IncludeShortcuts
     include_level_clears: IncludeLevelClears
-    logic_difficulty: LogicDifficulty
     trap_fill: TrapFill
     death_link: DeathLink

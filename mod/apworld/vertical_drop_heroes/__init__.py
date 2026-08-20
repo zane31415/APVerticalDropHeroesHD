@@ -66,11 +66,8 @@ class VDHWorld(World):
             if data.meta.get("filler") or data.meta.get("trap"):
                 continue
             count = data.max_count
-            if "shop" in data.meta:
-                count = self.options.shop_tiers.value
-            elif data.meta.get("shortcut"):
-                if not self.options.include_shortcuts:
-                    continue
+            if data.meta.get("shortcut") and not self.options.include_shortcuts:
+                continue
             pool += [self.create_item(name) for _ in range(count)]
 
         # Pad to the location count with filler (and traps, if asked for).
@@ -99,9 +96,7 @@ class VDHWorld(World):
 
     def fill_slot_data(self) -> Dict[str, Any]:
         return {
-            "shop_tiers": self.options.shop_tiers.value,
             "include_shortcuts": bool(self.options.include_shortcuts),
             "include_level_clears": bool(self.options.include_level_clears),
-            "logic_difficulty": self.options.logic_difficulty.value,
             "death_link": bool(self.options.death_link),
         }

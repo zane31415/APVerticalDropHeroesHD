@@ -110,15 +110,27 @@ and 2. Safe to clear unconditionally, because apclientpp replays the whole
 checked set through `ap_location_checked` right after `ap_slot_connected`,
 and omits it only when the set is genuinely empty.
 
-**Merchant locations are purchase order, not skill identity.** Naming them
+**Merchant locations are depth, not skill identity.** Naming them
 `Unlock: <skill>` made all 50 sphere 0, because you can buy any offered skill
 on level 1 and no honest requirement could be attached. They are now
-`Level N Merchant Unlock M`, keyed to how many unlocks you have bought.
+`Level N Merchant Unlock M`, and a Merchant on level L fills one of *L's own*
+five slots. Keying to global
+purchase order instead meant a merchant found on level 3 handed out "Level 1
+Merchant Unlock 5" just because that was the next number -- and a skipped
+level-1 slot could then only ever be cleared by returning to level 1. If L's
+five are taken it falls back to the deepest unfinished level below, which is
+sound because standing on L proves everything below L is reachable.
 
-That gate is the game's own. `spawn_shop` caps unlocks at
-`(global.unlocked + merchantSpawned) < min(50, enemyLevel * 5)`, so the Nth
-unlock is unreachable until level `ceil(N/5)`. Exposing an existing constraint
-beats inventing a parallel one. Sphere 0 fell from 82 locations to 47.
+**Logic is two linear curves, 1.5 shop tiers per level.** A level offers
+`floor(1.5 * L)` tiers of each shop, so all fifteen are on sale by level 10.
+Reaching level L demands what the levels below it offered,
+`floor(1.5 * (L - 1))` of both Progressive Damage and Progressive Max HP.
+Level 1 demands nothing, which is what makes sphere 0 exactly the five level-1
+merchant unlocks, the first tier of each shop, and "Level 1 Cleared".
+
+Progressive Orb XP is deliberately *not* a requirement: it scales pacifist-orb
+XP, not survivability, so demanding it would assert a dependency that does not
+exist.
 
 **Prices come from purchases made, not items received.** Vanilla priced the hub
 shops off `global.<x>level`, which AP drives from received items — so checking

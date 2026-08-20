@@ -1,45 +1,62 @@
 """Access rules.
 
-What limits you is depth, and the game says so itself.
+Two curves, both linear at 1.5 shop tiers per level.
 
-Merchant unlocks are capped by spawn_shop:
+**What a level offers.** By the time you can play level L you are expected to
+have been able to buy ``floor(1.5 * L)`` tiers of each hub shop:
 
-    (global.unlocked + merchantSpawned) < min(50, global.enemyLevel * 5)
+    level   1  2  3  4  5  6  7  8  9  10
+    tiers   1  3  4  6  7  9 10 12 13  15
 
-so the Nth unlock you ever buy is unreachable until level ceil(N / 5). That is
-a real, pre-existing constraint, not one this world invented, and the "Level N
-Merchant Unlock M" locations are named to expose it.
+So all fifteen tiers of each shop are purchasable by level 10.
 
-Beyond that, enemies scale hard with global.enemyLevel,
-and the only permanent power in the game is the Blacksmith's damage and the
-Apothecary's max HP. So depth-dependent locations require those, and they are
-what forms the progression spine.
+**What a level demands.** Reaching level L expects the tiers the levels below
+it offered, i.e. ``floor(1.5 * (L - 1))`` of both Progressive Damage and
+Progressive Max HP:
 
-Progressive Shortcut deliberately does *not* satisfy a depth requirement: it
-lets you start deeper, but it grants no power, so it cannot substitute for
-being able to survive down there.
+    level   1  2  3  4  5  6  7  8  9 10 11
+    need    0  1  3  4  6  7  9 10 12 13 15
+
+Level 1 demands nothing, which is what puts the five level-1 merchant unlocks,
+the first tier of each shop, and "Level 1 Cleared" in sphere 0.
+
+Progressive Orb XP is not a requirement. It scales pacifist-orb XP gain, not
+survivability, so demanding it would be claiming a dependency that does not
+exist. It is still progression because it gates its own shop's locations.
+
+Progressive Shortcut is likewise not a requirement: it lets you *start* deeper
+but grants no power, so it cannot substitute for being able to survive there.
 """
+
+import math
 
 from BaseClasses import CollectionState
 
-# level -> upgrades of *each* of damage/HP expected, per difficulty.
-# Level 1 must come out at 0 on every setting: it is the game's opening level
-# and is clearable with a starting hero and nothing else. Anything above 0
-# there would make sphere 0 unable to reach even the first shop tier.
-_CURVE = {
-    0: lambda lvl: max(0, lvl - 1),      # relaxed  (assumes you need the most)
-    1: lambda lvl: max(0, lvl - 3),      # standard
-    2: lambda lvl: max(0, lvl - 5),      # tricky   (assumes you can push deep)
-}
+from .defs import FINAL_LEVEL, MAX_SHOP_TIERS
+
+TIERS_PER_LEVEL = 1.5
 
 
-def depth_requirement(options, level: int) -> int:
-    need = _CURVE[options.logic_difficulty.value](level)
-    return min(need, options.shop_tiers.value)
+def tiers_offered_by(level: int) -> int:
+    """How many tiers of each shop are buyable once level `level` is playable."""
+    return min(MAX_SHOP_TIERS, math.floor(TIERS_PER_LEVEL * level))
 
 
-def can_reach_level(state: CollectionState, player: int, options, level: int) -> bool:
-    need = depth_requirement(options, level)
+def depth_requirement(level: int) -> int:
+    """Upgrades of each of damage and max HP expected to reach `level`."""
+    return min(MAX_SHOP_TIERS, math.floor(TIERS_PER_LEVEL * (level - 1)))
+
+
+def level_for_shop_tier(tier: int) -> int:
+    """Shallowest level at which `tier` is on sale."""
+    for level in range(1, FINAL_LEVEL + 1):
+        if tiers_offered_by(level) >= tier:
+            return level
+    return FINAL_LEVEL
+
+
+def can_reach_level(state: CollectionState, player: int, level: int) -> bool:
+    need = depth_requirement(level)
     if need <= 0:
         return True
     return (state.has("Progressive Damage", player, need)
@@ -55,35 +72,14 @@ def set_rules(world, options) -> None:
     for name, data in locations_for(options).items():
         loc = multiworld.get_location(name, player)
 
-        if data.category == "clear":
-            lvl = data.meta["level"]
-            loc.access_rule = (
-                lambda state, l=lvl: can_reach_level(state, player, options, l))
+        if data.category == "shop":
+            level = level_for_shop_tier(data.meta["tier"])
+        else:
+            # unlock / clear / shortcut / goal all carry their own level.
+            level = data.meta["level"]
 
-        elif data.category == "goal":
-            # bind through a default arg: `data` is the loop variable
-            loc.access_rule = (
-                lambda state, l=data.meta["level"]:
-                    can_reach_level(state, player, options, l))
+        loc.access_rule = (
+            lambda state, l=level: can_reach_level(state, player, l))
 
-        elif data.category == "shortcut":
-            lvl = data.meta["level"]
-            loc.access_rule = (
-                lambda state, l=lvl: can_reach_level(state, player, options, l))
-
-        elif data.category == "shop":
-            # Upgrade tiers cost escalating coins, and coin income scales with
-            # depth. Roughly a third of a level of depth per tier.
-            lvl = max(1, -(-data.meta["tier"] // 3))
-            loc.access_rule = (
-                lambda state, l=lvl: can_reach_level(state, player, options, l))
-
-        elif data.category == "unlock":
-            # Depth requirement is the game's own merchant spawn cap.
-            lvl = data.meta["level"]
-            loc.access_rule = (
-                lambda state, l=lvl: can_reach_level(state, player, options, l))
-
-    from .defs import FINAL_LEVEL
     multiworld.completion_condition[player] = (
-        lambda state: can_reach_level(state, player, options, FINAL_LEVEL))
+        lambda state: can_reach_level(state, player, FINAL_LEVEL))

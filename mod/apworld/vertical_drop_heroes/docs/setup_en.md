@@ -89,12 +89,11 @@ vanilla.
 
 ## What changed in the game
 
-- **The Merchant** sells unlock purchases rather than specific skills. The
-  *N*th unlock you buy is the location `Level ceil(N/5) Merchant Unlock ...`,
-  and the traits and powers themselves arrive as Archipelago items. That
-  numbering is not arbitrary: the base game already caps unlocks at
-  `min(50, enemyLevel * 5)`, so the 6th is unreachable until level 2, the 11th
-  until level 3, and so on.
+- **The Merchant** sells unlock purchases rather than specific skills. A
+  Merchant standing on level L fills one of *that level's* five slots, so you
+  never have to go back to a shallow level to mop up a slot you skipped. If
+  level L's five are all taken, it falls back to the deepest unfinished level
+  below. The traits and powers themselves arrive as Archipelago items.
 - **Every shop shows what you are buying.** The Blacksmith, Apothecary, Monk
   and Merchant each display the actual item sitting on their next location,
   including whose world it belongs to.

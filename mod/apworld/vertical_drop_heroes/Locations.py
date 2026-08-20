@@ -26,8 +26,6 @@ def locations_for(options) -> Dict[str, LocData]:
     """The subset of locations enabled by this slot's options."""
     out: Dict[str, LocData] = {}
     for name, data in location_table.items():
-        if data.category == "shop" and data.meta["tier"] > options.shop_tiers.value:
-            continue
         if data.category == "shortcut" and not options.include_shortcuts:
             continue
         if data.category == "clear" and not options.include_level_clears:

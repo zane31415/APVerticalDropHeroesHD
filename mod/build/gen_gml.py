@@ -56,6 +56,7 @@ def main():
             a(f"global.ap_unlock_level[{meta['order']}] = {meta['level']};")
     a(f"global.ap_unlock_total = {defs.TOTAL_SKILLS};")
     a(f"global.ap_unlocks_per_level = {defs.UNLOCKS_PER_LEVEL};")
+    a(f"global.ap_unlock_levels = {defs.UNLOCK_LEVELS};")
     a("")
     for name, iid, cls, cnt, meta in defs.ITEMS:
         if "skill" not in meta:

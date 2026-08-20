@@ -57,7 +57,8 @@ string[] newScripts = {
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
     "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
-    "ap_shortcut_open", "ap_scout_name", "ap_scout_request", "ap_desc_suffix",
+    "ap_shortcut_open", "ap_scout_name", "ap_scout_request",
+    "ap_desc_suffix", "ap_title_fix",
     "ap_connect_now", "ap_connect_on_start",
     "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
     "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
@@ -188,9 +189,12 @@ global.startLevel = global.enemyLevel + 1;
 // this on global.skipLevel, which under AP only rises when the server sends a
 // Progressive Shortcut -- so the crystal stayed on offer and the player could
 // pay again and again to re-check the same location.
+// Gate the ENTIRE crystal branch. Guarding only the affordability test left
+// the else-if partial-payment arm reachable, which took the player's coins
+// and gave nothing back.
 g.QueueFindReplace("gml_Script_activate_block",
-    "if ((global.coins + global.skipFunds) >= (global.enemyLevel * 50))",
-    "if ((global.coins + global.skipFunds) >= (global.enemyLevel * 50) && ap_shortcut_open(global.enemyLevel))");
+    "else if (global.mapCode != 0)",
+    "else if (global.mapCode != 0 && ap_shortcut_open(global.enemyLevel))");
 g.QueueFindReplace("gml_Script_loop_tile",
     "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && global.enemyLevel < (global.skipLevel - 1))",
     "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && ap_shortcut_open(global.enemyLevel))");
@@ -208,6 +212,11 @@ g.QueueFindReplace("gml_Script_activate_block",
 g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
     "draw_text_ext(x, y - 10, txt_desc, 20, 450);",
     "draw_text_ext(x, y - 10, ap_desc_suffix(txt_desc, target), 20, 450);");
+// The vanilla merchant branch only sets txt_title for trait/power1/power2/sold,
+// so our "unlock" category left it at the placeholder "Title".
+g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
+    "draw_text(x, y - 30, txt_title);",
+    "draw_text(x, y - 30, ap_title_fix(txt_title, target));");
 
 // -- level clear ------------------------------------------------------------
 // `global.portalDelay = 15;` appears twice (real portal + NG+ statue warp),

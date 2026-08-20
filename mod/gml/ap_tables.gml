@@ -112,6 +112,7 @@ global.ap_unlock_loc[50] = 8830049;
 global.ap_unlock_level[50] = 10;
 global.ap_unlock_total = 50;
 global.ap_unlocks_per_level = 5;
+global.ap_unlock_levels = 10;
 
 global.ap_skill_item[0, 0] = 8830000;
 global.ap_skill_item[0, 1] = 8830001;
