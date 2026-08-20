@@ -115,7 +115,7 @@ would silently miss every key-opened exit.
 
 **Self-contained save location.** The patch clears the
 `UseAppDataSaveLocation` info flag, which vanilla ships set. That moves
-`working_directory` from `%LOCALAPPDATA%\Vertical Drop Heroes HD\` to the game
+`working_directory` from `%APPDATA%\Vertical_Drop_Heroes_HD\` to the game
 folder, so the modded build keeps `vdh_save_11.ini`, `archipelago.ini` and
 `ap_debug.log` beside its own exe and shares nothing with an untouched Steam
 install. The modded build therefore starts from a blank save rather than
@@ -129,8 +129,12 @@ DLL cannot break a vanilla playthrough.
 
 - DLL/exe architecture match (both PE `014c`; the 64-bit DLL will not load).
 - `__cdecl` calling convention, from `include/gm-apclientpp.h`.
-- Patch applies with `ThrowOnNoOpFindReplace = true`, so all ten hook sites are
-  confirmed to have matched real vanilla code.
+- Patch applies with `ThrowOnNoOpFindReplace = true`, so every find/replace
+  hook site is confirmed to have matched real vanilla code.
+- Boot hooks cover both `rmMenu` (btnStartMenu) and `rmGameplay`
+  (obGameControl); obGameControl exists in the gameplay rooms *only*, verified
+  by walking `Data.Rooms`, so menu-side hooks are required or the mod is inert
+  until a run starts.
 - Patched `data.win` decompiles back with every hook in place.
 - Item/location balance is non-negative across all 12 option combinations.
 - Logic is solvable across all 36 option combinations (50 sphere-0 locations).

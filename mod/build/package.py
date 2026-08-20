@@ -119,21 +119,40 @@ Then:
      start clean, but Steam will happily verify or update your live install
      out from under you.
 
-  4. Point build.py at your copy and run it:
+  4. Point build.py at your copy and run it.
 
+     PowerShell:
+       $env:VDH_GAME_DIR = "C:\path\to\your\Vertical Drop Heroes HD"
+       python build\build.py
+
+     cmd.exe:
        set VDH_GAME_DIR=C:\path\to\your\Vertical Drop Heroes HD
        python build\build.py
 
+     NOTE: in PowerShell, `set VDH_GAME_DIR=...` does NOT work -- `set` is an
+     alias for Set-Variable there and never touches the environment. Use the
+     $env: form above.
+
      It patches data.win and copies the DLL in beside the exe.
 
-  5. Configure the connection. archipelago.ini does NOT go in the game folder;
-     GameMaker keeps it in the save area:
+  5. Configure the connection. archipelago.ini goes in the GAME FOLDER,
+     right next to the exe.
 
-       %LOCALAPPDATA%\Vertical Drop Heroes HD\archipelago.ini
+     The patcher clears GameMaker's UseAppDataSaveLocation flag, so the
+     modded build keeps everything -- vdh_save_11.ini, archipelago.ini and
+     ap_debug.log -- beside its own exe instead of in %APPDATA%. That is what
+     isolates it from an untouched Steam install, and it means the modded
+     build starts from a blank save rather than inheriting Steam unlocks.
 
-     It is not created until the game has run once. Either launch the game
-     and let it write a template (it prints the path on screen too), or make
-     the folder and file yourself. Fill in Host and Slot, then restart.
+     Launch once and the game writes a template you can edit, or create it
+     yourself:
+
+       [Archipelago]
+       Host=archipelago.gg:38281
+       Slot=YourSlotName
+       Password=
+
+     Then restart the game.
 
 If Slot is left blank the mod stays completely dormant and the game plays as
 vanilla -- it does not even load the DLL.

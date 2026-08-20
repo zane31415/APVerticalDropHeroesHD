@@ -21,7 +21,7 @@ string Gml(string name) => File.ReadAllText(Path.Combine(gmlDir, name + ".gml"))
 // 0. Self-contained save location
 // ---------------------------------------------------------------------------
 // Vanilla ships with UseAppDataSaveLocation set, so saves and ini files go to
-// %LOCALAPPDATA%\Vertical Drop Heroes HD\ -- shared with the untouched Steam
+// %APPDATA%\Vertical_Drop_Heroes_HD\ -- shared with the untouched Steam
 // install. Clearing the flag points working_directory at the game folder
 // instead, so the modded build keeps vdh_save_11.ini, archipelago.ini and
 // ap_debug.log entirely to itself and cannot disturb a Steam playthrough.
@@ -70,11 +70,20 @@ g.QueueReplace("gml_Script_set_merchant", Gml("set_merchant"));
 // ---------------------------------------------------------------------------
 // 3. Lifecycle hooks
 // ---------------------------------------------------------------------------
-// Earliest global init in the game; make sure ap_enabled reads false even if
-// some code path runs before obGameControl exists. Guarded so that returning
-// to the main menu does not clobber a live connection.
+// obGameControl lives ONLY in rmGameplay/rmGameplay_Coop -- verified by
+// walking Data.Rooms. Booting solely from there meant the mod was completely
+// inert at the splash screens and main menu: no connection, no status, no
+// log, and archipelago.ini never read. Since the player sits at the menu
+// first, that looked exactly like "the patch did nothing".
+//
+// So boot and pump from btnStartMenu (rmMenu) as well, which runs immediately
+// after the splashes. ap_boot is idempotent via global.ap_booted, so whichever
+// object gets there first wins and the other is a no-op.
 g.QueuePrepend("gml_Object_btnStartMenu_Create_0",
     "if (!variable_global_exists(\"ap_enabled\")) { global.ap_enabled = 0; }");
+g.QueueAppend("gml_Object_btnStartMenu_Create_0", "ap_boot();");
+g.QueueAppend("gml_Object_btnStartMenu_Step_0", "ap_step();");
+g.QueueAppend("gml_Object_btnStartMenu_Draw_0", "ap_draw();");
 
 g.QueueAppend("gml_Object_obGameControl_Create_0", "ap_boot();");
 g.QueueAppend("gml_Object_obGameControl_Step_0", "ap_step();");

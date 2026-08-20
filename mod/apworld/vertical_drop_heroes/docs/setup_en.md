@@ -37,10 +37,16 @@ are not ours to redistribute.
 
 2. Run the patcher, pointing it at that copy:
 
-   ```bash
-   set VDH_GAME_DIR=C:\path\to\your\Vertical Drop Heroes HD
+   In PowerShell:
+
+   ```powershell
+   $env:VDH_GAME_DIR = "C:\path\to\your\Vertical Drop Heroes HD"
    python build\build.py
    ```
+
+   In `cmd.exe` it is `set VDH_GAME_DIR=...` instead. Note that `set` in
+   PowerShell is an alias for `Set-Variable` and will *not* set an environment
+   variable, so the `$env:` form is required there.
 
    It regenerates the id tables, patches `data.win`, and copies the DLL next to
    the exe.
@@ -55,20 +61,16 @@ Drop `vertical_drop_heroes.apworld` into your Archipelago install's
 There is no in-game connect screen; connection details come from a config
 file.
 
-`archipelago.ini` does **not** live in the game folder. GameMaker writes it to
-the save area, which on Windows is:
+`archipelago.ini` lives in the **game folder**, right next to the exe.
 
-```
-%LOCALAPPDATA%\Vertical Drop Heroes HD\archipelago.ini
-```
+The patcher clears GameMaker's `UseAppDataSaveLocation` flag, so the modded
+build keeps `vdh_save_11.ini`, `archipelago.ini` and `ap_debug.log` beside its
+own exe rather than in `%APPDATA%\Vertical_Drop_Heroes_HD\`. That isolates it
+completely from an untouched Steam install — and means the modded build starts
+from a blank save instead of inheriting your Steam unlocks, which is what an
+Archipelago run wants anyway.
 
-(That folder name comes from the game's own GEN8 `filename` field, not from
-your install path -- it is the same regardless of where you put the game.)
-
-The file does not exist until the game has been run at least once. Either
-launch the game once and let it write a template -- it also prints the full
-path on screen -- or create the folder and file yourself now. Either way, fill
-it in:
+Launch once to have the game write a template, or just create the file:
 
 ```ini
 [Archipelago]
