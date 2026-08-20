@@ -25,8 +25,10 @@ client to run.** Connect from the in-game Options menu and play.
   level *L* fills one of *that level's* five slots, so where you shop matters.
 - **Blacksmith / Apothecary / Monk** each check a location per purchase. Your
   actual damage, max HP and orb XP come from the items Archipelago sends.
-- **Shortcut crystals** are checks; `Progressive Shortcut` items are what
-  actually let you start deeper. Using a shortcut you already own is free.
+- **Shortcut crystals** are checks, and still cost coins to light, so a
+  crystal is a real trade-off against shopping. `Progressive Shortcut` items
+  are what actually let you start deeper, and *using* a shortcut you already
+  own is free.
 - **Clearing a level** checks a location, whether you killed the Guardian or
   opened the portal with keys.
 - Every shop **shows the item it is about to hand over**, including whose
@@ -110,9 +112,9 @@ python mod/build/build.py      # patch a local game copy
 python mod/build/package.py    # build out/ release artifacts
 ```
 
-`mod/build/defs.py` — actually `mod/apworld/vertical_drop_heroes/defs.py` — is
-the single source of truth for every item and location id. `gen_gml.py` bakes
-those ids into GML; the apworld imports the same module. See
+`mod/apworld/vertical_drop_heroes/defs.py` is the single source of truth for
+every item and location id. `gen_gml.py` bakes those ids into GML and the
+apworld imports the same module, so the two halves cannot disagree. See
 [mod/README.md](mod/README.md) for architecture and design notes, and
 [HANDOFF.md](HANDOFF.md) for a full context dump.
 
@@ -135,3 +137,8 @@ them.
 
 This is an unofficial fan project. It ships no game assets and requires you to
 own the game.
+
+## License
+
+[MIT](LICENSE), covering the mod only -- the GML, the patcher and the
+Archipelago world. Not the game.
