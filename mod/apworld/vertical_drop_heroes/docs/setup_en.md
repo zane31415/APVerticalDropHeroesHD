@@ -1,5 +1,9 @@
 # Vertical Drop Heroes HD — Setup Guide
 
+> **Windows only.** The game has no Linux build (Proton should work but is
+> untested), and while it does ship a macOS build, gm-apclientpp publishes no
+> macOS binary, so there is nothing to load there yet.
+
 ## Do I need a client?
 
 **No.** The Archipelago client is compiled into the game itself, so there is no

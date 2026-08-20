@@ -8,6 +8,8 @@ shortcut crystals and level exits that used to grant them become checks. The
 Archipelago client is compiled into the game itself — **there is no separate
 client to run.** Connect from the in-game Options menu and play.
 
+> **Windows only.** See [Platform support](#platform-support).
+>
 > **This repository contains no game files.** You patch your own copy. See
 > [Installing](#installing).
 
@@ -95,6 +97,24 @@ connects for you automatically.
 
 Leave Slot empty and the mod stays completely dormant: it never even loads the
 DLL, and the game plays as vanilla.
+
+---
+
+## Platform support
+
+**Windows only.**
+
+The game has no Linux build, so on Linux the Windows version under Proton is
+the only target -- and that is what this patches, so it should work, though it
+is untested.
+
+macOS is the real gap. The game does ship a Mac build, but
+[gm-apclientpp](https://github.com/black-sliver/gm-apclientpp/releases)
+publishes Windows binaries only, so somebody would have to build the `.dylib`
+themselves from its `build-posix.sh`. Beyond that the port is small: the DLL
+name is already configurable via `DllPath` in `archipelago.ini`, and the
+patcher would need to look for `game.ios` inside the `.app` bundle instead of
+`data.win`. Not planned.
 
 ---
 
