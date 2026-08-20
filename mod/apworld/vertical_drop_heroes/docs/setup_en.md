@@ -101,8 +101,10 @@ vanilla.
   your damage, max HP and orb XP levels are driven entirely by the
   `Progressive Damage` / `Progressive Max HP` / `Progressive Orb XP` items you
   receive. Each stops selling once all its tiers are checked.
-- **Shortcut crystals** check a location; `Progressive Shortcut` items are what
-  actually raise how deep you can start.
+- **Shortcut crystals** check a location and still cost coins to enable, so
+  lighting one is a real trade-off against shopping. `Progressive Shortcut`
+  items are what actually raise how deep you can start, and *using* a shortcut
+  you already own is free.
 - **Clearing a level** (taking its exit portal, by boss or by keys) checks a
   location, for levels 1–10.
 - **Defeating the Chosen One** is the goal.

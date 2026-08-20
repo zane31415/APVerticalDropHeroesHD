@@ -151,13 +151,19 @@ merchant spawn cap above, so `ap_refresh_counters` keeps it equal to locations
 checked. Anything the player's *progress* should scale with has to count
 checks; only the player's *power* counts items.
 
-**Shortcuts are free.** Enabling a crystal is a location check, and using the
-Teleportation Shrine spends a Progressive Shortcut the server already granted,
-so charging coins for either taxes core traversal rather than gating anything.
-Replaced at all six sites so no readout can disagree with what is charged. This
-also kills a vanilla display bug: `global.skipFunds` persists in the save and
-accumulates across partial payments, so once it exceeded the cost the readout
-went negative ("-,118").
+**Using a shortcut is free; enabling one still costs.** Enabling a crystal is
+a real in-run decision -- coins spent there are coins not spent at a merchant
+-- so `ap_shortcut_cost()` keeps the vanilla price. Using the Teleportation
+Shrine, by contrast, spends a Progressive Shortcut the server already granted,
+so `ap_teleport_cost()` returns 0: charging to use what Archipelago gave you
+is a tax on progression. Both stay as scripts so each price has exactly one
+definition that the affordability test, the deduction and the readouts all
+share.
+
+`global.skipFunds` (partial payments banked toward a crystal) is cleared on
+connect. It persists in the save, and funds banked on one slot are meaningless
+on the next -- left alone they also drove the readout negative once they
+exceeded the price ("-,118 coins").
 
 **Every connect starts from a blank slate.** The reset used to live in the
 reconnect branch only, so a *first* connect skipped it -- and `save_game("load")`

@@ -123,6 +123,11 @@ before the appended `ap_boot`. Guard reads with `variable_global_exists`.
 **8. PowerShell `set VAR=x` does not set an environment variable** — it is an
 alias for `Set-Variable`. Use `$env:VAR = "x"`.
 
+**10. Never commit decompiled game code.** `UndertaleModCli dump` output is
+Nerdook's source. 22 such files were tracked before the first public push and
+had to be pulled; `.gitignore` now excludes `chk*/`, `verify/`, `dump*/` and
+any `CodeEntries/`.
+
 **9. Heredocs + Python + C# escaping.** Writing `patch.csx` through a bash
 heredoc mangles `\n` and backticks. Use the Edit tool or a script file for
 anything with escapes; use C# verbatim strings (`@"..."`) in the .csx.
@@ -142,8 +147,10 @@ server. Clearing only the first let slot A's checked set leak into slot B.
 Safe because apclientpp replays the full checked set right after
 `ap_slot_connected`, omitting it only when genuinely empty.
 
-**Shortcuts cost nothing.** `ap_shortcut_cost()` (enable) and
-`ap_teleport_cost()` (use) both return 0 under AP; six call sites replaced.
+**Shortcut pricing is split.** `ap_shortcut_cost()` (enable) keeps the vanilla
+price -- it is a real trade-off. `ap_teleport_cost()` (use) returns 0, because
+using a Progressive Shortcut the server granted should not be taxed.
+`global.skipFunds` is cleared on connect.
 
 **Every connect resets state.** `ap_connect_now` clears tallies, sent-state and
 re-applies derived stats unconditionally -- not just on reconnect. A first

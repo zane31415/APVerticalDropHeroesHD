@@ -10,9 +10,17 @@ gm-apclientpp.dll
 # --- build outputs ---------------------------------------------------------
 # Everything in out/ is reproducible: python mod/build/package.py
 out/
-mod/build/verify/
 mod/build/build.log
 *.apworld
+
+# --- decompiled game code --------------------------------------------------
+# Verification dumps from `UndertaleModCli dump` are the GAME's own decompiled
+# source, not ours. Never commit these; they are the one thing in this tree
+# that would be republishing Nerdook's code.
+mod/build/chk*/
+mod/build/verify/
+mod/build/dump*/
+**/CodeEntries/
 
 # --- python ----------------------------------------------------------------
 __pycache__/

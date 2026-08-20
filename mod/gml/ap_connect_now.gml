@@ -56,6 +56,12 @@ ap_reset_tallies();
 ap_reset_sent();
 ap_apply_state();
 
+// Partial payments toward a shortcut crystal persist in the save, and under AP
+// the crystal is a location check -- so funds banked against a crystal on one
+// slot are meaningless on the next. Left alone they also drove the cost readout
+// negative once they exceeded the price ("-,118 coins").
+global.skipFunds = 0;
+
 global.ap_enabled = 1;
 global.ap_err_count = 0;
 external_call(global.ext_ap_connect, "", "Vertical Drop Heroes HD", global.ap_host);

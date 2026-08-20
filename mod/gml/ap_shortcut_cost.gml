@@ -1,15 +1,12 @@
 // Cost to ENABLE a shortcut crystal.
 //
-// Free under Archipelago: the crystal is a location check and the shortcut
-// itself only arrives as a Progressive Shortcut item, so charging for it taxes
-// core traversal rather than gating anything.
+// Deliberately still costs, at the vanilla price. Enabling a shortcut is a
+// meaningful in-run decision -- coins spent here are coins not spent on
+// merchants -- so it stays a real trade-off. Only *using* an already-enabled
+// shortcut is free (see ap_teleport_cost).
 //
-// Incidentally kills a vanilla display bug: global.skipFunds persists in the
-// save and accumulates across partial payments, so once it exceeded
-// enemyLevel * 50 the shown cost went negative ("-,118").
+// Kept as a script rather than inlined so the price has exactly one
+// definition: the affordability test, the deduction and both readouts all
+// call this, and cannot drift apart.
 
-if (global.ap_enabled)
-{
-    return 0;
-}
 return global.enemyLevel * 50;
