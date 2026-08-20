@@ -121,6 +121,12 @@ folder, so the modded build keeps `vdh_save_11.ini`, `archipelago.ini` and
 install. The modded build therefore starts from a blank save rather than
 inheriting Steam unlocks — which is what an Archipelago run wants anyway.
 
+**The menu owns input before the stock menu does.** The Archipelago page is
+reached from Options, and its handler is *prepended* to btnStartMenu's Step so
+it can `exit` the whole event. A script-level `exit` only leaves the script, so
+without the prepend a single keypress would both type a character and move the
+stock menu cursor underneath.
+
 **Offline still works.** Every hook is guarded by `global.ap_enabled`, and an
 install with no `Slot` configured never even calls `external_define`. A missing
 DLL cannot break a vanilla playthrough.

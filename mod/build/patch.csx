@@ -57,6 +57,8 @@ string[] newScripts = {
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_scout_name", "ap_scout_request", "ap_desc_suffix",
+    "ap_connect_now", "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
+    "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
 };
 foreach (string s in newScripts)
     g.QueueReplace("gml_Script_" + s, Gml(s));
@@ -84,9 +86,22 @@ g.QueueReplace("gml_Script_set_merchant", Gml("set_merchant"));
 // object gets there first wins and the other is a no-op.
 g.QueuePrepend("gml_Object_btnStartMenu_Create_0",
     "if (!variable_global_exists(\"ap_enabled\")) { global.ap_enabled = 0; }");
-g.QueueAppend("gml_Object_btnStartMenu_Create_0", "ap_boot();");
+// Room for the extra "Archipelago" entry on the Options page.
+g.QueueAppend("gml_Object_btnStartMenu_Create_0",
+@"ap_boot();
+global.max_choices[2] = global.ap_menu_slot;");
+
+// The Archipelago menu has to see input BEFORE the stock menu does, otherwise
+// one keypress both types a character and moves the stock cursor. A prepended
+// `exit` leaves the whole event, which a script-level exit could not do.
+g.QueuePrepend("gml_Object_btnStartMenu_Step_0",
+@"if (variable_global_exists(""ap_menu_edit""))
+{
+    if (global.ap_menu_edit > 0) { ap_menu_typing(); ap_step(); exit; }
+    if (ap_menu_step()) { ap_step(); exit; }
+}");
 g.QueueAppend("gml_Object_btnStartMenu_Step_0", "ap_step();");
-g.QueueAppend("gml_Object_btnStartMenu_Draw_0", "ap_draw();");
+g.QueueAppend("gml_Object_btnStartMenu_Draw_0", "ap_draw(); ap_menu_draw();");
 
 g.QueueAppend("gml_Object_obGameControl_Create_0", "ap_boot();");
 g.QueueAppend("gml_Object_obGameControl_Step_0", "ap_step();");

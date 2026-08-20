@@ -73,6 +73,9 @@ for (var i = 1; i <= global.ap_unlock_total; i += 1)
     global.ap_sent_unlock[i] = 0;
 }
 global.ap_scout_sent = 0;
+global.ap_dll_bound = 0;
+global.ap_menu_edit = 0;
+global.ap_menu_slot = 8;   // extra entry appended to the Options page
 for (var i = 0; i < global.ap_loc_count; i += 1)
 {
     global.ap_scout[i] = "";
@@ -99,9 +102,9 @@ global.ap_diag_ini = "host='" + global.ap_host + "' slot='" + global.ap_slot + "
 
 if (global.ap_slot == "")
 {
-    global.ap_msg = "Archipelago: set Slot in archipelago.ini#" + working_directory;
+    global.ap_msg = "Archipelago: set up under Options > Archipelago";
     global.ap_msg_timer = 900;
-    ap_debug("no Slot configured -> staying dormant (vanilla behaviour)");
+    ap_debug("no Slot configured -> dormant; waiting for Options > Archipelago");
     exit;
 }
 if (global.ap_host == "")
@@ -109,29 +112,8 @@ if (global.ap_host == "")
     global.ap_host = "localhost:38281";
 }
 
-// --- bind the client ------------------------------------------------------
-ap_debug("binding DLL...");
-ap_dll();
-ap_debug("DLL bound OK");
-
-// api_version 1: GM7/8 string syntax. We never use the execute_string path
-// (GM:Studio removed it), so the GMS2 "+200" variant buys nothing here.
-if (!external_call(global.ext_ap_init, 1))
-{
-    global.ap_msg = "Archipelago: apclient_init failed";
-    global.ap_msg_timer = 600;
-    ap_debug("apclient_init FAILED");
-    exit;
-}
-
-external_call(global.ext_ap_set_version, 0, 6, 1);
-// items_handling 7 = own world + other worlds + starting inventory.
-// The full item list is resent on every connect, which is what lets
-// ap_apply_state() stay a pure function of the tallies.
-external_call(global.ext_ap_set_items, 7);
-
-global.ap_enabled = 1;
-external_call(global.ext_ap_connect, "", "Vertical Drop Heroes HD", global.ap_host);
-global.ap_msg = "Archipelago: connecting to " + global.ap_host + "...";
-global.ap_msg_timer = 300;
-ap_debug("connect() issued to " + global.ap_host);
+// --- connect ---------------------------------------------------------------
+// Connection details can also be changed later from Options > Archipelago,
+// which calls ap_connect_now() again; keeping the logic in one place means the
+// boot path and the menu path cannot drift.
+ap_connect_now();

@@ -58,40 +58,40 @@ Drop `vertical_drop_heroes.apworld` into your Archipelago install's
 
 ## Connecting
 
-There is no in-game connect screen; connection details come from a config
-file.
+Launch the game and go to **Game Options > Archipelago**.
 
-`archipelago.ini` lives in the **game folder**, right next to the exe.
-
-The patcher clears GameMaker's `UseAppDataSaveLocation` flag, so the modded
-build keeps `vdh_save_11.ini`, `archipelago.ini` and `ap_debug.log` beside its
-own exe rather than in `%APPDATA%\Vertical_Drop_Heroes_HD\`. That isolates it
-completely from an untouched Steam install — and means the modded build starts
-from a blank save instead of inheriting your Steam unlocks, which is what an
-Archipelago run wants anyway.
-
-Launch once to have the game write a template, or just create the file:
-
-```ini
-[Archipelago]
-Host=archipelago.gg:38281
-Slot=YourSlotName
-Password=
+```
+Server:    archipelago.gg:38281
+Slot:      YourSlotName
+Password:  (leave empty if the room has none)
+Connect
+Back
 ```
 
-`DllPath` is also accepted if you need to point at the DLL by absolute path.
+Up/Down moves, Enter edits a field or activates a row, **Ctrl+V pastes**, Esc
+goes back. Fields are saved as you leave them, so the details persist across
+restarts, and `Connect` can be used again at any time to retarget a different
+server without restarting the game.
 
-Restart the game. A status line in the top-left shows `AP: connecting` →
-`AP: handshaking` → `AP: connected`, and incoming items scroll underneath.
+Status is shown live on that page, and as a small readout in the top-left
+during play: `connecting` -> `handshaking` -> `connected`.
 
-If `Slot` is left blank the mod stays completely dormant — it never even loads
-the DLL — and the game plays as vanilla.
+Everything is still written to `archipelago.ini` in the game folder, so you can
+edit that by hand instead if you prefer. Leaving `Slot` empty keeps the mod
+completely dormant -- it does not even load the DLL, and the game plays as
+vanilla.
 
 ## What changed in the game
 
-- **The Merchant** still sells a random trait/power, but buying one *checks a
-  location* instead of unlocking the skill. The skill itself arrives as an
-  Archipelago item. He stocks whatever you have not checked yet.
+- **The Merchant** sells unlock purchases rather than specific skills. The
+  *N*th unlock you buy is the location `Level ceil(N/5) Merchant Unlock ...`,
+  and the traits and powers themselves arrive as Archipelago items. That
+  numbering is not arbitrary: the base game already caps unlocks at
+  `min(50, enemyLevel * 5)`, so the 6th is unreachable until level 2, the 11th
+  until level 3, and so on.
+- **Every shop shows what you are buying.** The Blacksmith, Apothecary, Monk
+  and Merchant each display the actual item sitting on their next location,
+  including whose world it belongs to.
 - **Blacksmith / Apothecary / Monk** likewise check a location per purchase;
   your damage, max HP and orb XP levels are driven entirely by the
   `Progressive Damage` / `Progressive Max HP` / `Progressive Orb XP` items you

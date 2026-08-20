@@ -135,24 +135,12 @@ Then:
 
      It patches data.win and copies the DLL in beside the exe.
 
-  5. Configure the connection. archipelago.ini goes in the GAME FOLDER,
-     right next to the exe.
+  5. Launch the game and go to Game Options > Archipelago. Fill in Server
+     (e.g. archipelago.gg:38281) and Slot, then choose Connect.
+     Ctrl+V pastes, which helps with long server strings.
 
-     The patcher clears GameMaker's UseAppDataSaveLocation flag, so the
-     modded build keeps everything -- vdh_save_11.ini, archipelago.ini and
-     ap_debug.log -- beside its own exe instead of in %APPDATA%. That is what
-     isolates it from an untouched Steam install, and it means the modded
-     build starts from a blank save rather than inheriting Steam unlocks.
-
-     Launch once and the game writes a template you can edit, or create it
-     yourself:
-
-       [Archipelago]
-       Host=archipelago.gg:38281
-       Slot=YourSlotName
-       Password=
-
-     Then restart the game.
+     The details are saved to archipelago.ini in the game folder, so you can
+     also edit that by hand.
 
 If Slot is left blank the mod stays completely dormant and the game plays as
 vanilla -- it does not even load the DLL.
