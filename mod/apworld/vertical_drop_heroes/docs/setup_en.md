@@ -3,7 +3,8 @@
 ## Do I need a client?
 
 **No.** The Archipelago client is compiled into the game itself, so there is no
-separate client process to run — launch the game and it connects on its own.
+separate client process to run — set up a Slot once, then choosing Single
+Player connects you.
 
 A text client is still useful for chat, `!hint`, and release commands, but
 nothing about items or checks depends on it.
