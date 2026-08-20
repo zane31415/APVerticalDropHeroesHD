@@ -101,6 +101,15 @@ through `apclient_json_number_at` / `apclient_json_proxy`. See
 because Archipelago replays your entire item history on every connect —
 replaying into a tally is idempotent, replaying into `hpmax += 7` is not.
 
+**Both mirrors are slot-specific.** `ap_reset_tallies` (received items) and
+`ap_reset_sent` (checked locations) are cleared on every connect and rebuilt
+from the server. Clearing only the first meant a reconnect to a *different*
+slot inherited the old slot's checked set: buying from the Apothecary on a
+fresh seed would skip to Upgrade 3 because the previous slot had checked 1
+and 2. Safe to clear unconditionally, because apclientpp replays the whole
+checked set through `ap_location_checked` right after `ap_slot_connected`,
+and omits it only when the set is genuinely empty.
+
 **Merchant locations are purchase order, not skill identity.** Naming them
 `Unlock: <skill>` made all 50 sphere 0, because you can buy any offered skill
 on level 1 and no honest requirement could be attached. They are now

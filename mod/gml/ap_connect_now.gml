@@ -37,11 +37,16 @@ if (!global.ap_dll_bound)
 }
 else
 {
-    // Reconnecting with different details: drop the old socket first.
+    // Reconnecting, possibly to a DIFFERENT slot: drop the old socket and
+    // every scrap of slot-specific state with it, so nothing from the previous
+    // server survives the gap before the new one reports in.
     external_call(global.ext_ap_disconnect);
     global.ap_ready = 0;
     global.ap_status_sent = 0;
     global.ap_scout_sent = 0;
+    ap_reset_tallies();
+    ap_reset_sent();
+    ap_apply_state();
 }
 
 global.ap_enabled = 1;

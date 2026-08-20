@@ -55,6 +55,7 @@ string[] newScripts = {
     "ap_shop_check", "ap_shop_open", "ap_level_cleared",
     "ap_shortcut_check", "ap_goal",
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
+    "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_scout_name", "ap_scout_request", "ap_desc_suffix",
     "ap_connect_now", "ap_connect_on_start",

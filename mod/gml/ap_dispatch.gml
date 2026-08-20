@@ -13,8 +13,12 @@ if (src == "ap_slot_connected")
     ap_log("Connected to Archipelago as " + global.ap_slot);
     // A fresh Connected means a full ReceivedItems resend is coming; drop the
     // tallies so ap_apply_state() rebuilds from the authoritative list.
+    // Both mirrors are slot-specific and must be rebuilt from this server.
+    // ap_slot_connected always precedes the ap_location_checked replay, so
+    // clearing here is repopulated a moment later.
     ap_reset_tallies();
-    global.ap_scout_sent = 0;   // re-scout: the fill may differ on a new seed
+    ap_reset_sent();
+    global.ap_scout_sent = 0;   // re-scout: the fill differs per seed
     exit;
 }
 
