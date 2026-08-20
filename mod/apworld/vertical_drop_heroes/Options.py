@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Options import DeathLink, DefaultOnToggle, PerGameCommonOptions, Range
+from Options import DefaultOnToggle, PerGameCommonOptions
 
 
 class IncludeShortcuts(DefaultOnToggle):
@@ -21,17 +21,7 @@ class IncludeLevelClears(DefaultOnToggle):
     display_name = "Include Level Clears"
 
 
-class TrapFill(Range):
-    """Percentage of filler slots replaced by traps."""
-    display_name = "Trap Fill Percentage"
-    range_start = 0
-    range_end = 100
-    default = 0
-
-
 @dataclass
 class VDHOptions(PerGameCommonOptions):
     include_shortcuts: IncludeShortcuts
     include_level_clears: IncludeLevelClears
-    trap_fill: TrapFill
-    death_link: DeathLink

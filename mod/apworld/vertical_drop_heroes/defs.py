@@ -86,7 +86,6 @@ FINAL_LEVEL = 11
 SHORTCUT_LEVELS = list(range(2, FINAL_LEVEL + 1))
 
 FILLER_NAME = "Coin Cache"
-TRAP_NAME = "Fragile Hero Trap"
 
 
 # --- id assignment ----------------------------------------------------------
@@ -140,7 +139,6 @@ def build_items():
     out.append(("Progressive Shortcut", nxt(), "progression",
                 len(SHORTCUT_LEVELS), {"shortcut": True}))
     out.append((FILLER_NAME, nxt(), "filler", 0, {"filler": True}))
-    out.append((TRAP_NAME, nxt(), "trap", 0, {"trap": True}))
     return out
 
 

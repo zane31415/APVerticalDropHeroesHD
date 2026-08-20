@@ -2,9 +2,13 @@
 
   python build.py
 
-Runs from two different layouts -- the dev repo (mod/build/) and the shipped
-patcher bundle (vdh-ap-patcher/build/) -- so every input is located by search
-rather than by a fixed relative path. Override any of them with:
+The normal case is that this lives INSIDE the game folder, as
+<game>/build/build.py, so everything it needs is one directory up and no
+configuration is required at all -- players unzip into the game folder and run
+it. It also still works from the dev repo, where the game sits in a
+subdirectory.
+
+Environment overrides, only needed for unusual layouts:
 
   VDH_GAME_DIR   the game folder containing data.win
   VDH_DLL        path to the 32-bit gm-apclientpp.dll
@@ -18,8 +22,13 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Candidate roots: the patcher bundle puts inputs one level up, the dev repo
 # two levels up.
+# Where to look for the game and the DLL, nearest first:
+#   HERE/..      <game>/build/build.py  -- the shipped layout
+#   HERE/../..   mod/build/build.py     -- the dev repo
+#   cwd          whatever the player was standing in
 SEARCH = [os.path.abspath(os.path.join(HERE, "..")),
-          os.path.abspath(os.path.join(HERE, "..", ".."))]
+          os.path.abspath(os.path.join(HERE, "..", "..")),
+          os.path.abspath(os.getcwd())]
 
 GAME_DIR_NAME = "Vertical Drop Heroes HD"
 
@@ -40,11 +49,26 @@ def find_game_dir():
             sys.exit(f"VDH_GAME_DIR has no data.win: {env}")
         return env
     for root in SEARCH:
+        # the folder itself is the game folder (shipped layout)
+        if os.path.isfile(os.path.join(root, "data.win")):
+            return root
+        # or the game is a subdirectory of it (dev repo)
         cand = os.path.join(root, GAME_DIR_NAME)
         if os.path.isfile(os.path.join(cand, "data.win")):
             return cand
-    sys.exit("Could not find the game folder.\n"
-             "Set VDH_GAME_DIR to the folder containing data.win.")
+    sys.exit(
+        "Could not find data.win.\n\n"
+        "This patcher expects to sit inside your game folder, like this:\n"
+        "\n"
+        "    Vertical Drop Heroes HD\\\n"
+        "        data.win\n"
+        "        Vertical Drop Heroes HD.exe\n"
+        "        gm-apclientpp.dll\n"
+        "        build\\build.py        <-- this file\n"
+        "        gml\\\n"
+        "\n"
+        "Copy everything from the patcher zip into your game folder, then run\n"
+        "it again. (Advanced: set VDH_GAME_DIR to the folder holding data.win.)")
 
 
 def find_dll():
@@ -53,6 +77,9 @@ def find_dll():
         return env if os.path.isfile(env) else None
     for root in SEARCH:
         cand = os.path.join(root, "gm-apclientpp.dll")
+        if os.path.isfile(cand):
+            return cand
+        cand = os.path.join(root, GAME_DIR_NAME, "gm-apclientpp.dll")
         if os.path.isfile(cand):
             return cand
     return None
@@ -76,11 +103,13 @@ def find_utmt():
 def main():
     utmt = find_utmt()
     if not utmt:
-        sys.exit("UndertaleModCli.exe not found.\n"
-                 "Download the UTMT CLI build from\n"
-                 "  https://github.com/UnderminersTeam/UndertaleModTool/releases\n"
-                 f"and unzip it to {os.path.join(HERE, 'utmt')}\\\n"
-                 "or set UTMT_CLI to its path.")
+        sys.exit(
+            "UndertaleModTool not found.\n\n"
+            "Download the CLI build from:\n"
+            "  https://github.com/UnderminersTeam/UndertaleModTool/releases\n\n"
+            "Take the file named  UTMT_CLI_<version>-Windows.zip  and unzip it\n"
+            "so that this file exists:\n"
+            f"  {os.path.join(HERE, 'utmt', 'UndertaleModCli.exe')}")
 
     game = find_game_dir()
     target = os.path.join(game, "data.win")
@@ -141,8 +170,10 @@ def main():
               "           https://github.com/black-sliver/gm-apclientpp/releases\n"
               "         and copy it next to the game exe yourself.")
 
-    print("\nDone. Launch once; the game writes archipelago.ini and shows you "
-          "its path on screen. Fill in Host and Slot, then restart.")
+    print("\nDone! Now launch the game and go to:")
+    print("    Game Options  >  Archipelago")
+    print("Fill in Server and Slot, then choose Connect. After that, picking")
+    print("Single Player connects for you automatically.")
 
 
 if __name__ == "__main__":

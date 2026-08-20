@@ -394,7 +394,6 @@ global.ap_clear_loc[10] = 8830114;
 global.ap_goal_loc = 8830115;
 
 global.ap_filler_item = 8830054;
-global.ap_trap_item = 8830055;
 
 global.ap_loc_count = 116;
-global.ap_item_id_max = 8830055;
+global.ap_item_id_max = 8830054;

@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 from BaseClasses import Item, ItemClassification, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from .defs import FILLER_NAME, GAME_NAME, GOAL_LOCATION, TRAP_NAME
+from .defs import FILLER_NAME, GAME_NAME, GOAL_LOCATION
 from .Items import VDHItem, item_name_groups, item_name_to_id, item_table
 from .Locations import VDHLocation, location_name_to_id, locations_for
 from .Options import VDHOptions
@@ -63,7 +63,7 @@ class VDHWorld(World):
         pool: List[Item] = []
 
         for name, data in item_table.items():
-            if data.meta.get("filler") or data.meta.get("trap"):
+            if data.meta.get("filler"):
                 continue
             count = data.max_count
             if data.meta.get("shortcut") and not self.options.include_shortcuts:
@@ -82,9 +82,7 @@ class VDHWorld(World):
                 pool.remove(item)
             remaining = len(enabled) - len(pool)
 
-        traps = remaining * self.options.trap_fill.value // 100
-        pool += [self.create_item(TRAP_NAME) for _ in range(traps)]
-        pool += [self.create_item(FILLER_NAME) for _ in range(remaining - traps)]
+        pool += [self.create_item(FILLER_NAME) for _ in range(remaining)]
 
         self.multiworld.itempool += pool
 
@@ -98,5 +96,4 @@ class VDHWorld(World):
         return {
             "include_shortcuts": bool(self.options.include_shortcuts),
             "include_level_clears": bool(self.options.include_level_clears),
-            "death_link": bool(self.options.death_link),
         }

@@ -41,9 +41,3 @@ if (iid == global.ap_filler_item)
     global.coins += (25 * max(1, global.enemyLevel));
     exit;
 }
-
-if (iid == global.ap_trap_item)
-{
-    global.ap_pending_trap = 1;
-    exit;
-}

@@ -24,7 +24,6 @@ global.ap_msg_timer = 0;
 global.ap_log_count = 0;
 global.ap_log_timer = 0;
 global.ap_err_count = 0;
-global.ap_pending_trap = 0;
 // Always populated, even on the early-exit paths, so ap_draw can report
 // where the mod is actually reading and writing.
 global.ap_diag_dir = working_directory;

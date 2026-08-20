@@ -34,8 +34,7 @@ client to run.** Connect from the in-game Options menu and play.
 - Every shop **shows the item it is about to hand over**, including whose
   world it belongs to.
 
-Options: `include_shortcuts`, `include_level_clears`, `trap_fill`,
-`death_link` (declared but not yet implemented — leave it off).
+Options: `include_shortcuts`, `include_level_clears`.
 
 ---
 
@@ -49,42 +48,50 @@ into your Archipelago install's `custom_worlds/` folder.
 
 ### 2. The game (every player)
 
-You need three things, two of which are not ours to redistribute:
+Some pieces belong to other projects and are not ours to redistribute, so you
+fetch those yourself:
 
-1. **Your own copy of Vertical Drop Heroes HD.** Steam or DRM-free — both use
-   the same GameMaker `data.win`.
-2. **UndertaleModTool**, CLI build —
-   [releases](https://github.com/UnderminersTeam/UndertaleModTool/releases).
-   Take `UTMT_CLI_<version>-Windows.zip` and unzip it into the patcher's
-   `build/utmt/`, so that `build/utmt/UndertaleModCli.exe` exists.
-3. **`gm-apclientpp.dll`, the 32-bit build** —
-   [releases](https://github.com/black-sliver/gm-apclientpp/releases).
-   Put it beside the patcher's `README.txt`.
-   **The 64-bit build will not work** — the GameMaker 1.4 runner is 32-bit.
+- **Python** — <https://www.python.org/downloads/>.
+  During setup, **tick "Add python.exe to PATH"**.
+- **UndertaleModTool**, CLI build —
+  [releases](https://github.com/UnderminersTeam/UndertaleModTool/releases).
+  Grab `UTMT_CLI_<version>-Windows.zip`.
+- **`gm-apclientpp.dll`, the 32-bit build** —
+  [releases](https://github.com/black-sliver/gm-apclientpp/releases).
+  **The 64-bit build will not work** — the GameMaker 1.4 runner is 32-bit.
 
-Then grab `vdh-ap-patcher.zip` from the release and:
+Then:
 
-```powershell
-# Copy your game folder somewhere OUTSIDE Steam first.
-$env:VDH_GAME_DIR = "C:\path\to\your\Vertical Drop Heroes HD"
-python build\build.py
+1. **Copy your whole game folder** somewhere outside Steam and work on the
+   copy. Steam can "verify" your real install and quietly undo everything.
+2. **Extract `vdh-ap-patcher.zip` into that game folder.**
+3. Put **`gm-apclientpp.dll`** in the same folder, next to `data.win`.
+4. Extract **UndertaleModTool** into `build\utmt\`.
+5. **Double-click `patch.bat`.**
+
+You should end up with this, and nothing to type:
+
+```
+Vertical Drop Heroes HD\
+    data.win
+    Vertical Drop Heroes HD.exe
+    gm-apclientpp.dll
+    patch.bat
+    build\
+        build.py
+        utmt\UndertaleModCli.exe
+    gml\
 ```
 
-> In `cmd.exe` use `set VDH_GAME_DIR=...`. Note that `set` in **PowerShell** is
-> an alias for `Set-Variable` and does *not* set an environment variable, so
-> the `$env:` form is required there.
-
-Copy the game folder rather than patching your live Steam install: Steam will
-happily verify or update `data.win` out from under you.
-
-The patcher rewrites `data.win`, drops the DLL beside the exe, and writes a
-`steam_appid.txt` (see [Steam DRM](#a-note-on-steam-drm)).
+The patcher needs no configuration because it is sitting in the folder it
+patches. If you would rather keep it elsewhere, set `VDH_GAME_DIR` to the
+folder holding `data.win` and run `python build\build.py`.
 
 ### 3. Connect
 
 Launch the game, go to **Game Options → Archipelago**, fill in Server and Slot,
-and choose Connect — or just pick **Single Player**, which connects for you.
-`Ctrl+V` pastes. Details are saved to `archipelago.ini` beside the exe.
+and choose Connect. `Ctrl+V` pastes. After that, picking **Single Player**
+connects for you automatically.
 
 Leave Slot empty and the mod stays completely dormant: it never even loads the
 DLL, and the game plays as vanilla.

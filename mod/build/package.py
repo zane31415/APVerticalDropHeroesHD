@@ -74,82 +74,30 @@ def build_patcher():
     shutil.copy2(os.path.join(APWORLD_SRC, "defs.py"),
                  os.path.join(dst_build, "defs.py"))
 
+    shutil.copy2(os.path.join(HERE, "patch.bat"),
+                 os.path.join(PATCHER_DIR, "patch.bat"))
+
     tmpl = os.path.join(ROOT, "archipelago.ini.template")
     if os.path.isfile(tmpl):
         shutil.copy2(tmpl, PATCHER_DIR)
 
-    with open(os.path.join(PATCHER_DIR, "README.txt"), "w", encoding="utf-8") as f:
-        f.write(PLAYER_README)
+    # The player-facing README lives in its own .txt rather than a Python
+    # string literal: it is full of Windows paths, and backslash escapes inside
+    # a source literal silently mangle them.
+    shutil.copy2(os.path.join(HERE, "player_README.txt"),
+                 os.path.join(PATCHER_DIR, "README.txt"))
 
+    # Flat archive, deliberately: the install step is "extract this into your
+    # game folder", which only works if build/ and gml/ land at the top level
+    # rather than inside a wrapper directory.
     zip_path = os.path.join(OUT, "vdh-ap-patcher.zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for base, _dirs, files in os.walk(PATCHER_DIR):
             for fn in files:
                 full = os.path.join(base, fn)
-                arc = os.path.join("vdh-ap-patcher",
-                                   os.path.relpath(full, PATCHER_DIR))
+                arc = os.path.relpath(full, PATCHER_DIR)
                 z.write(full, arc.replace(os.sep, "/"))
     return zip_path
-
-
-# Raw string: this text is full of Windows paths, and a stray \a or \V in a
-# normal literal silently mangles them.
-PLAYER_README = r"""Vertical Drop Heroes HD - Archipelago patcher
-=============================================
-
-You need TWO things this archive does not contain, because neither is ours to
-redistribute:
-
-  1. UndertaleModTool (CLI build)
-     https://github.com/UnderminersTeam/UndertaleModTool/releases
-     Download "UTMT_CLI_<version>-Windows.zip" and unzip it into build/utmt/
-     so that build/utmt/UndertaleModCli.exe exists.
-     (Or set the UTMT_CLI environment variable to UndertaleModCli.exe.)
-
-  2. gm-apclientpp.dll -- the 32-BIT build
-     https://github.com/black-sliver/gm-apclientpp/releases
-     Put it next to this README.
-     The 64-bit build will NOT work. Vertical Drop Heroes HD runs on the
-     32-bit GameMaker 1.4 runner.
-
-Then:
-
-  3. COPY your game folder somewhere outside Steam. The patcher rewrites
-     data.win in place. It keeps a data.win.vanilla snapshot so repeat builds
-     start clean, but Steam will happily verify or update your live install
-     out from under you.
-
-  4. Point build.py at your copy and run it.
-
-     PowerShell:
-       $env:VDH_GAME_DIR = "C:\path\to\your\Vertical Drop Heroes HD"
-       python build\build.py
-
-     cmd.exe:
-       set VDH_GAME_DIR=C:\path\to\your\Vertical Drop Heroes HD
-       python build\build.py
-
-     NOTE: in PowerShell, `set VDH_GAME_DIR=...` does NOT work -- `set` is an
-     alias for Set-Variable there and never touches the environment. Use the
-     $env: form above.
-
-     It patches data.win and copies the DLL in beside the exe.
-
-  5. Launch the game and go to Game Options > Archipelago. Fill in Server
-     (e.g. archipelago.gg:38281) and Slot, then choose Connect.
-     Ctrl+V pastes, which helps with long server strings.
-
-     The details are saved to archipelago.ini in the game folder, so you can
-     also edit that by hand.
-
-If Slot is left blank the mod stays completely dormant and the game plays as
-vanilla -- it does not even load the DLL.
-
-A status line appears top-left: AP: connecting -> handshaking -> connected.
-
-You do NOT need a separate Archipelago client running. The game talks to the
-server directly. (A text client is still handy for chat and hints.)
-"""
 
 
 def main():

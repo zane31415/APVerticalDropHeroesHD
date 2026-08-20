@@ -107,11 +107,9 @@ def main():
             a(f"global.ap_goal_loc = {lid};")
     a("")
 
-    # --- traps/filler --------------------------------------------------------
+    # --- filler --------------------------------------------------------------
     for name, iid, cls, cnt, meta in defs.ITEMS:
-        if meta.get("trap"):
-            a(f"global.ap_trap_item = {iid};")
-        elif meta.get("filler"):
+        if meta.get("filler"):
             a(f"global.ap_filler_item = {iid};")
     a("")
     a(f"global.ap_loc_count = {len(defs.LOCATIONS)};")
