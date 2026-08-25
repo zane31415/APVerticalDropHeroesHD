@@ -9,7 +9,8 @@ from typing import Any, Dict, List
 from BaseClasses import Item, ItemClassification, Region, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from .defs import FILLER_NAME, GAME_NAME, GOAL_LOCATION
+from .defs import (FILLER_NAME, GAME_NAME, GOAL_LOCATION,
+                   SHOP_PRICE_CLIFF_EVERY)
 from .Items import VDHItem, item_name_groups, item_name_to_id, item_table
 from .Locations import VDHLocation, location_name_to_id, locations_for
 from .Options import VDHOptions
@@ -63,26 +64,43 @@ class VDHWorld(World):
         pool: List[Item] = []
 
         for name, data in item_table.items():
-            if data.meta.get("filler"):
+            if data.meta.get("filler") or data.meta.get("trap"):
                 continue
-            count = data.max_count
             if data.meta.get("shortcut") and not self.options.include_shortcuts:
                 continue
+            if data.meta.get("level_access") and not self.options.level_locks:
+                continue
+            count = data.max_count
+            if "shop" in data.meta:
+                # One progressive upgrade per tier this slot actually plays.
+                count = int(self.options.shop_upgrade_tiers)
             pool += [self.create_item(name) for _ in range(count)]
 
-        # Pad to the location count with filler (and traps, if asked for).
+        # Pad to the location count with filler.
         remaining = len(enabled) - len(pool)
         if remaining < 0:
-            # More items than locations: trim useful skills last-in-first-out.
-            # Should not happen with the shipped tables, but keep generation
-            # from hard-failing if someone edits defs.py.
+            # More items than locations. Reachable with level locks on and one
+            # of the optional location categories off -- turning shortcuts or
+            # level clears off removes ten locations while level locks add ten
+            # items. Progression must all be placed, so the overflow comes out
+            # of the skill unlocks: those are `useful`, and a skill that is
+            # never placed is simply a skill this seed does not offer.
             useful = [i for i in pool
                       if i.classification == ItemClassification.useful]
             for item in useful[remaining:]:
                 pool.remove(item)
             remaining = len(enabled) - len(pool)
 
-        pool += [self.create_item(FILLER_NAME) for _ in range(remaining)]
+        # Whatever is left over is filler, of which some percentage is traps.
+        # Traps only ever displace filler, never anything that carries power.
+        traps = remaining * int(self.options.trap_fill) // 100
+        trap_names = [n for n, d in item_table.items() if d.meta.get("trap")]
+        if not trap_names:
+            traps = 0
+        for _ in range(traps):
+            pool.append(self.create_item(self.random.choice(trap_names)))
+        for _ in range(remaining - traps):
+            pool.append(self.create_item(self.get_filler_item_name()))
 
         self.multiworld.itempool += pool
 
@@ -90,10 +108,22 @@ class VDHWorld(World):
         set_rules(self, self.options)
 
     def get_filler_item_name(self) -> str:
-        return FILLER_NAME
+        names = [n for n, d in item_table.items() if d.meta.get("filler")]
+        return self.random.choice(names) if names else FILLER_NAME
 
     def fill_slot_data(self) -> Dict[str, Any]:
+        # The game reads this on ap_slot_connected and reconfigures itself from
+        # it, so every option that changes in-game behaviour has to ride along.
+        # Booleans go over as 0/1: the GML side reads slot_data through
+        # apclient_json_number_at.
         return {
-            "include_shortcuts": bool(self.options.include_shortcuts),
-            "include_level_clears": bool(self.options.include_level_clears),
+            "include_shortcuts": int(bool(self.options.include_shortcuts)),
+            "include_level_clears": int(bool(self.options.include_level_clears)),
+            "shop_upgrade_tiers": int(self.options.shop_upgrade_tiers),
+            "shop_price_step": int(self.options.shop_price_step),
+            "shop_price_cliff": int(self.options.shop_price_cliff),
+            "shop_price_cliff_every": SHOP_PRICE_CLIFF_EVERY,
+            "level_locks": int(bool(self.options.level_locks)),
+            "shrine_checks": int(self.options.shrine_checks),
+            "death_link": int(bool(self.options.death_link)),
         }

@@ -4,6 +4,11 @@
 // through the json proxies until the next poll(). Proxy 0 is the root.
 
 var src = external_call(global.ext_ap_json_source);
+// Every event, named, before anything is done with it. An exception raised
+// inside the DLL arrives as its own later event saying only "Unknown
+// exception", so the only way to know what was being processed when it blew
+// up is to have already written down what we were processing.
+ap_trace("event: " + string(src));
 
 if (src == "ap_slot_connected")
 {
@@ -18,6 +23,14 @@ if (src == "ap_slot_connected")
     // clearing here is repopulated a moment later.
     ap_reset_tallies();
     ap_reset_sent();
+    // After the reset, not before: ap_slot_data ends by re-deriving game state
+    // from the (now empty) tallies, and doing that first would only have it
+    // zeroed a line later. proxy 0 is still this event's argument here, which
+    // for ap_slot_connected IS the slot_data object -- and it stops being that
+    // on the next poll(), so this is the only place the yaml can be read.
+    ap_slot_data();
+    // The seed is known by now, which is what the progress mark is keyed on.
+    ap_progress_load();
     global.ap_scout_sent = 0;   // re-scout: the fill differs per seed
     exit;
 }
@@ -35,8 +48,19 @@ if (src == "ap_items_received")
     {
         for (var i = 0; i < len; i += 1)
         {
-            ap_receive_item(external_call(global.ext_ap_json_number_at, ids, string(i)));
+            // `index` is where this batch starts in the slot's whole item
+            // history, so index + i is an absolute position -- which is what
+            // makes it comparable against the persisted high-water mark and
+            // therefore what tells a first delivery apart from a replay.
+            ap_receive_item(
+                external_call(global.ext_ap_json_number_at, ids, string(i)),
+                (index + i) >= global.ap_item_hwm);
         }
+    }
+    if ((index + len) > global.ap_item_hwm)
+    {
+        global.ap_item_hwm = index + len;
+        ap_progress_save();
     }
     ap_apply_state();
     exit;
@@ -70,6 +94,9 @@ if (src == "ap_location_info")
         }
     }
     ap_debug("scout results stored: " + string(n));
+    // Any Merchant standing on screen was stocked before this reply landed and
+    // is showing the "Unlock N" placeholder. Now it can say what it holds.
+    ap_merchant_restock();
     exit;
 }
 
@@ -89,9 +116,23 @@ if (src == "ap_location_checked")
     exit;
 }
 
+if (src == "ap_bounced")
+{
+    // Bounced is the transport for DeathLink and nothing else we use, so the
+    // tag check inside ap_death_recv is what decides whether this is for us.
+    ap_death_recv();
+    exit;
+}
+
 if (src == "ap_print_json")
 {
+    // Dump the raw packet to the log BEFORE rendering it. Nothing the game
+    // does can make the DLL throw here, but what another world sends can:
+    // render_json walks colour and entity tags it may not recognise, and the
+    // failure surfaces as a bare "Unknown exception" with no clue what was in
+    // it. Whatever the last line of the log is, that is the packet.
     var raw = external_call(global.ext_ap_json_dump, 0);
+    ap_trace("print_json raw: " + string(raw));
     ap_log(external_call(global.ext_ap_render_json, raw, global.AP_RENDER_TEXT));
     exit;
 }
@@ -144,6 +185,11 @@ if (src == "ap_socket_error")
 
 if (src == "show_message")
 {
-    ap_log("AP error: " + external_call(global.ext_ap_json_string_at, 0, "message"));
+    // The DLL's error channel. ap_debug, never ap_trace: this is the one event
+    // that must be in the file whether or not anyone thought to turn tracing
+    // on beforehand, because by definition nobody saw it coming.
+    var msg = external_call(global.ext_ap_json_string_at, 0, "message");
+    ap_debug("SHOW_MESSAGE from DLL: " + string(msg));
+    ap_log("AP error: " + msg);
     exit;
 }

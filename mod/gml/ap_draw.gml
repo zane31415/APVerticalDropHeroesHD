@@ -14,7 +14,7 @@ if (!variable_global_exists("ap_booted"))
     exit;
 }
 
-var lines = 3;
+var lines = 1;
 if (global.ap_log_timer > 0 && global.ap_log_count > 0)
 {
     lines += min(global.ap_log_count, 6);
@@ -53,13 +53,10 @@ if (global.ap_enabled)
 draw_set_color(col);
 draw_text(8, 8, label);
 
-// --- where the mod is reading and writing its files -----------------------
-// Printed unconditionally: if the save-location flag did not take effect at
-// runtime, this is what tells us where archipelago.ini and ap_debug.log
-// actually went.
-draw_set_color(c_white);
-draw_text(8, 26, "dir: " + global.ap_diag_dir);
-draw_text(8, 44, "ini: " + global.ap_diag_ini);
+// Nothing else belongs on the gameplay HUD. The build stamp and the save-area
+// path are real diagnostics and both live on Options > Archipelago, which is
+// where someone goes when something is wrong; parking them over the game for
+// everyone else is just clutter. ap_debug.log gets both regardless.
 
 // --- rolling event feed ----------------------------------------------------
 if (global.ap_log_timer > 0 && global.ap_log_count > 0)
@@ -69,7 +66,7 @@ if (global.ap_log_timer > 0 && global.ap_log_count > 0)
     for (var i = 0; i < shown; i += 1)
     {
         var slot = (global.ap_log_count - shown + i) mod 6;
-        draw_text(8, 62 + (i * 18), global.ap_log_line[slot]);
+        draw_text(8, 26 + (i * 18), global.ap_log_line[slot]);
     }
 }
 

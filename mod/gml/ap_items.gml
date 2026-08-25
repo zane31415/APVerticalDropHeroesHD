@@ -6,6 +6,7 @@ global.ap_recv_shop[0] = 0;
 global.ap_recv_shop[1] = 0;
 global.ap_recv_shop[2] = 0;
 global.ap_recv_short = 0;
+global.ap_recv_level = 0;
 for (var g = 0; g < 3; g += 1)
 {
     for (var i = 0; i < global.ap_skill_count[g]; i += 1)

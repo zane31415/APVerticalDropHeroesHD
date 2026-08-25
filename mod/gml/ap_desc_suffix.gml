@@ -39,6 +39,23 @@ if (tgt.sprite_index == sprNPC_Merchant)
     return "Buy an unlock for your future heroes.##AP: " + mn;
 }
 
+// --- shrines ---------------------------------------------------------------
+// The next shrine you activate on this level checks the next slot, so that is
+// the item to name. Which sprites count is ap_is_shrine's problem.
+if (global.ap_shrine_checks > 0 && ap_is_shrine(tgt.sprite_index))
+{
+    var sn = ap_shrine_next(global.enemyLevel);
+    if (sn > 0)
+    {
+        var sname = ap_scout_name(global.ap_shrine_loc[global.enemyLevel, sn]);
+        if (sname == "")
+        {
+            sname = "(not scouted yet)";
+        }
+        return desc + "##AP: " + sname;
+    }
+}
+
 // --- the three hub upgrade vendors ----------------------------------------
 var lid = -1;
 if (tgt.sprite_index == sprNPC_Blacksmith)

@@ -136,5 +136,16 @@ if (global.ap_log_count > 0)
     draw_text(110, 432, global.ap_log_line[(global.ap_log_count - 1) mod 6]);
 }
 
+// --- where the mod lives ---------------------------------------------------
+// This is the diagnostics page, so the working directory belongs here rather
+// than on the gameplay HUD: it is the folder ap_debug.log and archipelago.ini
+// are actually written to, which is not always the folder the exe sits in --
+// under Program Files, Windows silently redirects both into
+// %LOCALAPPDATA%\VirtualStore. Asking someone for a log they cannot find is
+// how an evening goes missing.
+draw_set_color(make_color_rgb(130, 130, 130));
+draw_text(110, 470, "build " + global.ap_build);
+draw_text(110, 492, "files: " + global.ap_diag_dir);
+
 draw_set_color(c_white);
 draw_set_alpha(1);

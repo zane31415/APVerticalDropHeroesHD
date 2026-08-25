@@ -30,6 +30,13 @@ while (guard < 64)
 
 global.ap_state = external_call(global.ext_ap_get_state);
 
+// A DeathLink can land on any frame, including ones with no hero to kill.
+// ap_dl_apply() is what waits for a frame that has one.
+ap_dl_apply();
+
+// Filler and traps that needed a hero and did not have one when they arrived.
+ap_consume();
+
 // Scout every location once, as soon as names are resolvable, so the shop UI
 // can say what each purchase will hand over.
 if (global.ap_ready && !global.ap_scout_sent

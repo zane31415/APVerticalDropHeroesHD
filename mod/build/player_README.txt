@@ -9,16 +9,8 @@ WHAT YOU NEED
 2. Python. If you do not have it: https://www.python.org/downloads/
    During setup, TICK THE BOX that says "Add python.exe to PATH".
 
-3. UndertaleModTool, CLI build:
-   https://github.com/UnderminersTeam/UndertaleModTool/releases
-   Download the file named  UTMT_CLI_<version>-Windows.zip
-
-4. gm-apclientpp.dll, the 32-BIT build:
-   https://github.com/black-sliver/gm-apclientpp/releases
-   The 64-bit one will NOT work.
-
-Items 3 and 4 are separate downloads because they belong to other projects and
-are not ours to hand out.
+That is the whole list. UndertaleModTool and gm-apclientpp.dll are already in
+this zip - see THIRD-PARTY below.
 
 
 INSTALLING
@@ -35,18 +27,15 @@ INSTALLING
            data.win
            Vertical Drop Heroes HD.exe
            patch.bat            <-- from this zip
+           gm-apclientpp.dll    <-- from this zip
            build\               <-- from this zip
            gml\                 <-- from this zip
+           third-party\         <-- from this zip
 
-3. Put gm-apclientpp.dll into that same game folder, next to data.win.
+3. Double-click patch.bat.
 
-4. Unzip UndertaleModTool into the build\utmt folder, so that this exists:
-
-       Vertical Drop Heroes HD\build\utmt\UndertaleModCli.exe
-
-5. Double-click patch.bat.
-
-That is it. No paths to type and no settings to change.
+That is it. Two steps, nothing to download, no paths to type and no settings
+to change.
 
 
 PLAYING
@@ -65,10 +54,38 @@ Leave Slot blank and the mod does nothing at all - the game plays as vanilla.
 IF SOMETHING GOES WRONG
 -----------------------
 
-Look for ap_debug.log in the game folder. If that file does not exist, then the
-game you launched is not the one that got patched - check that steam_appid.txt
-is sitting next to the exe, and that you are launching the copy you patched
-rather than your Steam one.
+Open Game Options > Archipelago. The bottom of that page shows the build stamp
+and the folder the game reads and writes. Check the stamp matches the patch you
+just ran - if it does not, the game you launched is not the one that got
+patched. Check steam_appid.txt is next to the exe, and that you are launching
+the copy you patched rather than your Steam one.
+
+That folder is where ap_debug.log lives, and it is NOT the game folder:
+GameMaker redirects the game's file writes into its own save area, which is
+
+    %LOCALAPPDATA%\Vertical_Drop_Heroes_HD\
+
+archipelago.ini is in there too, and that is the copy the game actually reads -
+editing the one sitting next to the exe has no effect. Set Debug=1 in it to
+have the log record every event, which is worth doing before reproducing a bug
+and worth turning off afterwards.
 
 You do NOT need a separate Archipelago client running. The game talks to the
 server itself. (A text client is still handy for chat and hints.)
+
+
+THIRD-PARTY
+-----------
+
+This zip includes two components that belong to other projects, exactly as
+their authors published them:
+
+  UndertaleModTool 0.9.1.2 (GPL-3.0), which does the patching. It lives in
+  build\utmt\, and its source is in third-party\UndertaleModTool\ because the
+  GPL requires the source to travel with the program.
+
+  gm-apclientpp v0.4.9-3 (MIT) by black-sliver, ThatOneGuy27 and LeonarthCG,
+  which is the Archipelago client the patched game loads.
+
+Licenses and details are in third-party\README.md. The mod itself - the GML,
+the patcher scripts and the Archipelago world - is MIT.

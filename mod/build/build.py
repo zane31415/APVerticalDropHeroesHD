@@ -13,11 +13,16 @@ Environment overrides, only needed for unusual layouts:
   VDH_GAME_DIR   the game folder containing data.win
   VDH_DLL        path to the 32-bit gm-apclientpp.dll
   UTMT_CLI       path to UndertaleModCli.exe
+
+UndertaleModTool and gm-apclientpp are not fetched from the internet: both are
+vendored in third-party/ and unpacked from there. See third-party/README.md.
 """
 import os
 import shutil
 import subprocess
 import sys
+
+import vendor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Candidate roots: the patcher bundle puts inputs one level up, the dev repo
@@ -41,20 +46,43 @@ GAME_DIR_NAME = "Vertical Drop Heroes HD"
 # next to the exe makes that check return false, and the local copy runs.
 STEAM_APPID = "311480"
 
+# Any byte sequence that exists in a patched data.win and cannot exist in a
+# clean one. Script names are interned as plain strings in the GEN8 string
+# table, so this is a substring search on the raw file -- no UndertaleModTool
+# needed, and it works on any game build rather than pinning one checksum.
+PATCHED_MARKER = b"ap_boot"
+
+
+def looks_patched(path):
+    with open(path, "rb") as f:
+        return PATCHED_MARKER in f.read()
+
+
+def has_game(d):
+    """Is this the game folder?
+
+    Either file will do. data.win.vanilla is the pristine snapshot and is the
+    thing we actually patch from, so a folder that has only that -- someone who
+    carried the clean copy across and let the patched one go -- is still a
+    perfectly good place to build.
+    """
+    return (os.path.isfile(os.path.join(d, "data.win"))
+            or os.path.isfile(os.path.join(d, "data.win.vanilla")))
+
 
 def find_game_dir():
     env = os.environ.get("VDH_GAME_DIR")
     if env:
-        if not os.path.isfile(os.path.join(env, "data.win")):
+        if not has_game(env):
             sys.exit(f"VDH_GAME_DIR has no data.win: {env}")
         return env
     for root in SEARCH:
         # the folder itself is the game folder (shipped layout)
-        if os.path.isfile(os.path.join(root, "data.win")):
+        if has_game(root):
             return root
         # or the game is a subdirectory of it (dev repo)
         cand = os.path.join(root, GAME_DIR_NAME)
-        if os.path.isfile(os.path.join(cand, "data.win")):
+        if has_game(cand):
             return cand
     sys.exit(
         "Could not find data.win.\n\n"
@@ -82,7 +110,10 @@ def find_dll():
         cand = os.path.join(root, GAME_DIR_NAME, "gm-apclientpp.dll")
         if os.path.isfile(cand):
             return cand
-    return None
+    # Nowhere to be seen: unpack the vendored copy beside this script. The
+    # bundle already ships the DLL in the game folder, so this is the dev-repo
+    # path, and the copy into the game folder happens as usual below.
+    return vendor.unpack_dll(HERE)
 
 
 def _same_file(a, b):
@@ -97,28 +128,93 @@ def find_utmt():
     if env:
         return env if os.path.isfile(env) else None
     cand = os.path.join(HERE, "utmt", "UndertaleModCli.exe")
-    return cand if os.path.isfile(cand) else None
+    if os.path.isfile(cand):
+        return cand
+    # Not unpacked yet: the release bundle ships utmt/ ready to go, but in the
+    # dev repo it is a build output, extracted from the vendored zip on demand.
+    return vendor.unpack_utmt(os.path.join(HERE, "utmt"))
+
+
+def report_build_stamp():
+    """Say which build of the patcher this is, if the bundle was stamped.
+
+    package.py writes BUILD.txt; the dev repo has none. Printed first thing so
+    that a report of "I patched and nothing changed" carries the one fact that
+    settles it -- copying a stale out/ over is otherwise indistinguishable from
+    the patch not working.
+    """
+    for root in SEARCH:
+        stamp = os.path.join(root, "BUILD.txt")
+        if os.path.isfile(stamp):
+            with open(stamp, encoding="utf-8") as f:
+                print("patcher build: " + f.readline().strip())
+            return
 
 
 def main():
+    report_build_stamp()
     utmt = find_utmt()
     if not utmt:
         sys.exit(
-            "UndertaleModTool not found.\n\n"
-            "Download the CLI build from:\n"
-            "  https://github.com/UnderminersTeam/UndertaleModTool/releases\n\n"
-            "Take the file named  UTMT_CLI_<version>-Windows.zip  and unzip it\n"
-            "so that this file exists:\n"
-            f"  {os.path.join(HERE, 'utmt', 'UndertaleModCli.exe')}")
+            "UndertaleModTool not found, and there is no vendored copy to\n"
+            "unpack it from. Expected one of:\n"
+            f"  {os.path.join(HERE, 'utmt', 'UndertaleModCli.exe')}\n"
+            f"  {vendor.UTMT_ZIP}\n\n"
+            "If the patcher zip was extracted only partly, extract it again.\n"
+            "(Advanced: set UTMT_CLI to your own UndertaleModCli.exe.)")
 
     game = find_game_dir()
     target = os.path.join(game, "data.win")
     vanilla = os.path.join(game, "data.win.vanilla")
     print(f"game: {game}")
 
-    # Always patch from a pristine snapshot: the patch appends to existing code
-    # entries, so applying it twice would duplicate the hooks.
-    if not os.path.isfile(vanilla):
+    # ALWAYS patch from data.win.vanilla when it exists. That file is the
+    # pristine snapshot and the only correct input: the patch appends to
+    # existing code entries, so running it over an already-patched file stacks
+    # a second copy of every hook. Whatever state data.win is in is irrelevant
+    # once the snapshot exists -- it is simply overwritten.
+    if os.path.isfile(vanilla):
+        if looks_patched(vanilla):
+            # The one unrecoverable case. The snapshot is taken once and
+            # trusted forever after, so if it was taken FROM a patched file
+            # every build since has been doubling up, and no amount of
+            # re-running fixes it.
+            sys.exit(
+                "data.win.vanilla is not vanilla -- it already contains the\n"
+                "mod.\n\n"
+                "It is the baseline every build patches from, so leaving it in\n"
+                "place would stack a second copy of the mod on top of the\n"
+                "first.\n\n"
+                "Delete it, restore a clean data.win (Steam > Properties >\n"
+                "Installed Files > Verify integrity of game files), and run\n"
+                "this again.\n\n"
+                f"  {vanilla}")
+        print("patching from data.win.vanilla")
+    else:
+        # No snapshot yet, so data.win itself has to be the clean copy -- and
+        # this is the one moment that can be got wrong permanently. Copy a
+        # patched game folder to another machine without its data.win.vanilla,
+        # run the patcher there, and a patched file becomes the baseline.
+        if not os.path.isfile(target):
+            sys.exit(
+                f"No data.win and no data.win.vanilla in:\n  {game}\n\n"
+                "There is nothing to patch. Copy the patcher into your game\n"
+                "folder and run it again.")
+        if looks_patched(target):
+            sys.exit(
+                "data.win is ALREADY PATCHED, and there is no\n"
+                "data.win.vanilla to patch from.\n\n"
+                "Snapshotting it now would make a patched file the permanent\n"
+                "baseline, and every later build would stack another copy of\n"
+                "the mod on top of the last.\n\n"
+                "Restore a clean data.win first:\n"
+                "  Steam > right-click Vertical Drop Heroes HD > Properties\n"
+                "        > Installed Files > Verify integrity of game files\n"
+                "or copy data.win from a fresh install, then run this again.\n\n"
+                f"  {target}\n\n"
+                "(If you moved this folder from another machine, bring its\n"
+                "data.win.vanilla with it -- that IS the clean copy, and the\n"
+                "patcher will use it on its own.)")
         print("first run: snapshotting vanilla data.win")
         shutil.copy2(target, vanilla)
 
@@ -165,10 +261,12 @@ def main():
                       "Close the game and re-run if the DLL itself changed; "
                       "data.win is already patched either way.")
     else:
-        print("WARNING: gm-apclientpp.dll not found.\n"
-              "         Get the 32-BIT build from\n"
-              "           https://github.com/black-sliver/gm-apclientpp/releases\n"
-              "         and copy it next to the game exe yourself.")
+        print("WARNING: gm-apclientpp.dll not found, and no vendored copy to\n"
+              "         unpack it from. The game will patch, but the mod will\n"
+              "         not be able to connect. Expected:\n"
+              f"           {vendor.DLL_ZIP}\n"
+              "         If the patcher zip was extracted only partly, extract\n"
+              "         it again.")
 
     print("\nDone! Now launch the game and go to:")
     print("    Game Options  >  Archipelago")

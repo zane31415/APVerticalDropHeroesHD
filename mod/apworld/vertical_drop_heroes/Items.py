@@ -20,6 +20,7 @@ _CLASSIFICATION = {
     "progression": ItemClassification.progression,
     "useful": ItemClassification.useful,
     "filler": ItemClassification.filler,
+    "trap": ItemClassification.trap,
 }
 
 item_table: Dict[str, ItemData] = {

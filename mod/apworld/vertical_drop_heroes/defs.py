@@ -13,6 +13,15 @@ BASE_ID = 8830000
 
 GAME_NAME = "Vertical Drop Heroes HD"
 
+# Version of this world. Single source of truth for it too: archipelago.json is
+# checked against this at package time, gen_gml.py bakes it into the game as
+# global.ap_build, and package.py stamps it into the patcher's BUILD.txt. A
+# release where those three disagree is a release nobody can debug.
+WORLD_VERSION = "0.2.0"
+
+# The Archipelago this world is developed and generated against.
+MIN_AP_VERSION = "0.6.7"
+
 # --- skills -----------------------------------------------------------------
 # Index == index into global.tr_unlock[] (see gml_Script_new_unlock).
 TRAITS = [
@@ -59,14 +68,37 @@ UNLOCK_LEVELS = TOTAL_SKILLS // UNLOCKS_PER_LEVEL            # 10
 
 # --- between-run shops ------------------------------------------------------
 # Each is an unbounded global.<x>level counter in the vanilla game; we cap it
-# at MAX_SHOP_TIERS tiers and hand out the increments as progression items.
+# at a configurable number of tiers and hand out the increments as progression
+# items.
 SHOPS = [
     # (key, gml global, display name, npc sprite, item name)
     ("blacksmith", "dlevel", "Blacksmith", "sprNPC_Blacksmith", "Progressive Damage"),
     ("apothecary", "hlevel", "Apothecary", "sprNPC_Healer",     "Progressive Max HP"),
     ("monk",       "plevel", "Monk",       "sprNPC_MonkC",      "Progressive Orb XP"),
 ]
-MAX_SHOP_TIERS = 15
+
+# How many tiers each shop CAN have. This is the id space, not the slot's
+# setting: ids must be identical for every player in a multiworld, so the
+# tables always describe MAX_SHOP_TIERS tiers and the slot's own
+# `shop_upgrade_tiers` selects how many of them are actually in play.
+MIN_SHOP_TIERS = 15
+MAX_SHOP_TIERS = 30
+DEFAULT_SHOP_TIERS = 20
+
+# Vanilla pricing, kept as the defaults so an unconfigured yaml plays exactly
+# as the game always did:
+#
+#   global.dprice = 25 + floor(dlevel / 10) * 25
+#   cost          = dlevel * global.dprice
+#
+# i.e. the price climbs by 25 coins for every tier already bought, and the
+# *rate* of that climb steps up by another 25 every ten tiers. The step-up is
+# every ten tiers, not fifteen -- with the vanilla 15-tier cap it therefore
+# fires exactly once, at tier 10, which is what makes the back half of a shop
+# feel like a wall.
+SHOP_PRICE_CLIFF_EVERY = 10
+DEFAULT_SHOP_PRICE_STEP = 25
+DEFAULT_SHOP_PRICE_CLIFF = 25
 
 # --- levels -----------------------------------------------------------------
 # global.mapArray[1..11]; enemy_boss[11] == "Chosen One" is the finale.
@@ -85,7 +117,50 @@ FINAL_LEVEL = 11
 # Shortcuts unlock travel to levels 2..11 (global.skipLevel).
 SHORTCUT_LEVELS = list(range(2, FINAL_LEVEL + 1))
 
-FILLER_NAME = "Coin Cache"
+# --- shrines ----------------------------------------------------------------
+# place_tiles drops a random shrine on roughly one tile in fifty, but only on
+# real levels: the random-tile branch is gated on
+# `global.mapCode != 0 && global.mapCode != 11 && global.linesPlaced > 6`, so
+# neither the village nor the Chosen One gauntlet ever grows one.
+#
+# The first `shrine_checks` shrines you activate on a level are locations.
+# After that the level is simply out of Archipelago slots -- shrines go on
+# spawning and go on working, they just stop checking anything. Activating a
+# shrine always does what it always did; the check rides along, the way a level
+# clear does.
+#
+# As with shop tiers, the id space is the maximum and the slot picks how much
+# of it is live.
+MAX_SHRINES_PER_LEVEL = 10
+DEFAULT_SHRINE_CHECKS = 5
+SHRINE_LEVELS = list(range(1, 11))   # levels 1..10, same as CLEAR_LEVELS
+
+# --- level access ------------------------------------------------------------
+# Optional (see the `level_locks` option). Levels 2..11 each need to have been
+# unlocked before the hero may descend into them; taking the exit portal of a
+# level whose successor is still locked drops you back into the village with
+# your hero intact, so the level clear still counts and the run continues from
+# the top. Level 1 is always open -- there has to be somewhere to play.
+LEVEL_ITEM_NAME = "Progressive Level Access"
+ACCESS_LEVELS = list(range(2, FINAL_LEVEL + 1))
+
+# --- filler and traps --------------------------------------------------------
+# (name, effect key). The effect key is what the GML dispatches on, so adding
+# one here plus a branch in gml/ap_effect.gml is the whole job.
+#
+# Everything except Coin Cache needs a living hero, so ap_effect queues those
+# and ap_consume drains the queue on the first frame that has one. Coins are a
+# global that persists across runs, so they land immediately.
+FILLERS = [
+    ("Coin Cache",   "coins"),
+    ("Shrine Boost", "shrine"),
+    ("Mana Refill",  "mana"),
+    ("Skeleton Key", "key"),
+]
+TRAPS = [
+    ("Alarm Trap", "alarm"),
+]
+FILLER_NAME = FILLERS[0][0]
 
 
 # --- id assignment ----------------------------------------------------------
@@ -121,6 +196,10 @@ def build_locations():
         out.append((f"Shortcut to Level {lvl}", nxt(), "shortcut", {"level": lvl}))
     for lvl in CLEAR_LEVELS:
         out.append((f"Level {lvl} Cleared", nxt(), "clear", {"level": lvl}))
+    for lvl in SHRINE_LEVELS:
+        for n in range(1, MAX_SHRINES_PER_LEVEL + 1):
+            out.append((f"Level {lvl} Shrine {n}", nxt(), "shrine",
+                        {"level": lvl, "slot": n}))
     out.append((GOAL_LOCATION, nxt(), "goal", {"level": FINAL_LEVEL}))
     return out
 
@@ -138,7 +217,14 @@ def build_items():
                     {"shop": key, "glob": glob}))
     out.append(("Progressive Shortcut", nxt(), "progression",
                 len(SHORTCUT_LEVELS), {"shortcut": True}))
-    out.append((FILLER_NAME, nxt(), "filler", 0, {"filler": True}))
+    out.append((LEVEL_ITEM_NAME, nxt(), "progression",
+                len(ACCESS_LEVELS), {"level_access": True}))
+    for name, effect in FILLERS:
+        out.append((name, nxt(), "filler", 0,
+                    {"filler": True, "effect": effect}))
+    for name, effect in TRAPS:
+        out.append((name, nxt(), "trap", 0,
+                    {"trap": True, "effect": effect}))
     return out
 
 

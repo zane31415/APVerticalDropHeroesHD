@@ -8,5 +8,9 @@ if (!global.ap_enabled || !global.ap_ready)
 {
     exit;
 }
+// Logged before the call, not after: if the DLL throws, the show_message
+// event that follows says only "Unknown exception", so the id we were sending
+// has to already be in the file.
+ap_debug("location_checks [" + string(argument0) + "]");
 external_call(global.ext_ap_location_checks, "[" + string(argument0) + "]");
 ap_mark_sent(argument0);

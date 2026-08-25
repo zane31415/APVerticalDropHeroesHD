@@ -4,7 +4,7 @@
 // tile can also be opened with 5 keys ("Defeat the <boss> OR Unlock with
 // 5 Keys!"), and both routes should count as a clear.
 
-if (!global.ap_enabled)
+if (!global.ap_enabled || !global.ap_clears_on)
 {
     exit;
 }

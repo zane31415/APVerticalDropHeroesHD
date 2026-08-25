@@ -3,7 +3,12 @@
 # data.win is a derivative of it -- ship the patcher, not the patched game.
 Vertical Drop Heroes HD/
 
-# --- third-party binaries (build inputs, fetched not vendored) -------------
+# --- third-party (vendored as zips, unpacked as build outputs) -------------
+# The archives in mod/third-party/ ARE committed, exactly as upstream published
+# them -- that is what lets a player extract one zip and run patch.bat, and it
+# is how the GPL source for UndertaleModTool stays with the binary it belongs
+# to. See mod/third-party/README.md. What is ignored is the unpacked forms,
+# which vendor.py recreates from those archives on demand.
 mod/build/utmt/
 gm-apclientpp.dll
 

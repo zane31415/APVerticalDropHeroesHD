@@ -8,6 +8,13 @@ Host=archipelago.gg:38281
 Slot=
 Password=
 
+; Set to 1 to trace every event the client handles and every message the
+; server broadcasts into ap_debug.log. Off by default: the line rate is set by
+; how busy the multiworld is rather than by this game, and each line is a
+; separate file write. Turn it on when you have something specific to catch,
+; and back off afterwards.
+Debug=0
+
 ; Optional. Only needed if the runner will not resolve the bare DLL name
 ; against the game folder.
 ;DllPath=C:\path\to\gm-apclientpp.dll

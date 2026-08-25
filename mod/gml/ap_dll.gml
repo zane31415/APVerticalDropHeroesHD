@@ -26,6 +26,14 @@ global.ext_ap_get_player_alias= external_define(global.ap_dll, "apclient_get_pla
 global.ext_ap_get_seed        = external_define(global.ap_dll, "apclient_get_seed",        dll_cdecl, ty_string, 0);
 global.ext_ap_dp_valid        = external_define(global.ap_dll, "apclient_is_data_package_valid", dll_cdecl, ty_real, 0);
 
+// DeathLink. apclient_death_link() fills in the timestamp and the DeathLink
+// tag itself; all we supply is the cause text. Receiving arrives as an
+// ap_bounced event, which needs the DeathLink tag on our own connection --
+// and slot_data (which is what tells us the option is on) only arrives after
+// the slot handshake, so the tag goes on afterwards with connect_update.
+global.ext_ap_death_link      = external_define(global.ap_dll, "apclient_death_link",      dll_cdecl, ty_real,   1, ty_string);
+global.ext_ap_connect_update  = external_define(global.ap_dll, "apclient_connect_update",  dll_cdecl, ty_real,   1, ty_string);
+
 // json accessors -- the GMS event path (no execute_string in GM:Studio)
 global.ext_ap_json_source     = external_define(global.ap_dll, "apclient_json_source",     dll_cdecl, ty_string, 0);
 global.ext_ap_json_proxy      = external_define(global.ap_dll, "apclient_json_proxy",      dll_cdecl, ty_real,   2, ty_real, ty_string);

@@ -21,10 +21,17 @@ string Gml(string name) => File.ReadAllText(Path.Combine(gmlDir, name + ".gml"))
 // 0. Self-contained save location
 // ---------------------------------------------------------------------------
 // Vanilla ships with UseAppDataSaveLocation set, so saves and ini files go to
-// %APPDATA%\Vertical_Drop_Heroes_HD\ -- shared with the untouched Steam
-// install. Clearing the flag points working_directory at the game folder
-// instead, so the modded build keeps vdh_save_11.ini, archipelago.ini and
-// ap_debug.log entirely to itself and cannot disturb a Steam playthrough.
+// Roaming: %APPDATA%\Vertical_Drop_Heroes_HD\ -- shared with the untouched
+// Steam install. Clearing the flag moves the game's save area to Local,
+// %LOCALAPPDATA%\Vertical_Drop_Heroes_HD\, so the modded build keeps
+// vdh_save_11.ini, archipelago.ini and ap_debug.log to itself and cannot
+// disturb a Steam playthrough.
+//
+// It does NOT put those files next to the exe, and working_directory says
+// otherwise -- it reports the game folder either way, because GM:Studio's file
+// sandbox redirects the writes underneath it. Believing working_directory cost
+// a long evening of looking for a log in a folder the game had never written
+// to. game_save_id is the value that matches reality; ap_boot reports that one.
 //
 // Side effect worth knowing: the modded build starts from a blank save rather
 // than inheriting your Steam unlocks. For Archipelago that is what you want.
@@ -32,7 +39,7 @@ var infoFlags = Data.GeneralInfo.Info;
 if (infoFlags.HasFlag(UndertaleGeneralInfo.InfoFlags.UseAppDataSaveLocation))
 {
     Data.GeneralInfo.Info = infoFlags & ~UndertaleGeneralInfo.InfoFlags.UseAppDataSaveLocation;
-    Console.WriteLine("cleared UseAppDataSaveLocation -> saves live beside the exe");
+    Console.WriteLine("cleared UseAppDataSaveLocation -> save area moves to %LOCALAPPDATA%");
 }
 else
 {
@@ -52,9 +59,11 @@ string[] newScripts = {
     "ap_tables", "ap_dll", "ap_boot", "ap_step", "ap_dispatch",
     "ap_receive_item", "ap_apply_state", "ap_check", "ap_mark_sent",
     "ap_skill_in_stock", "ap_skill_name", "ap_log", "ap_draw", "ap_debug",
+    "ap_trace",
     "ap_shop_check", "ap_shop_open", "ap_level_cleared",
     "ap_shortcut_check", "ap_goal",
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
+    "ap_merchant_restock", "ap_reroll_select", "ap_tutorial_off",
     "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_shortcut_cost", "ap_teleport_cost",
@@ -63,6 +72,13 @@ string[] newScripts = {
     "ap_connect_now", "ap_connect_on_start",
     "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
     "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
+    "ap_sd_num", "ap_slot_data",
+    "ap_level_open", "ap_to_village",
+    "ap_death", "ap_death_recv", "ap_dl_apply", "ap_death_line",
+    "ap_is_shrine", "ap_shrine_next", "ap_shrine_check",
+    "ap_effect", "ap_consume", "ap_can_act", "ap_shrine_boost", "ap_alarm_trap",
+    "ap_progress_load", "ap_progress_save",
+    "ap_merchant_spawn_ok", "ap_crystal_spawn_ok",
 };
 foreach (string s in newScripts)
     g.QueueReplace("gml_Script_" + s, Gml(s));
@@ -200,12 +216,58 @@ g.QueueFindReplace("gml_Script_loop_tile",
     "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && global.enemyLevel < (global.skipLevel - 1))",
     "else if (decor.sprite_index == spShrine_Skip && global.coins >= ((global.enemyLevel + 1) * (3 + (5 * global.gameDone))) && ap_shortcut_open(global.enemyLevel))");
 
+// -- merchant spawning ------------------------------------------------------
+// Vanilla capped Merchants on the TOTAL number of unlocks bought. Under AP a
+// Merchant fills one of its own level's five slots, so that counter locks a
+// level out for good once five unlocks have been bought anywhere: fill level
+// 3's slots and level 1 stops spawning Merchants forever, stranding its own
+// five locations. Ask about this level's remaining stock instead.
+g.QueueFindReplace("gml_Script_spawn_shop",
+    "if ((global.unlocked + global.merchantSpawned) < min(50, global.enemyLevel * 5))",
+    "if (ap_merchant_spawn_ok())");
+
+// -- shortcut crystal spawning ----------------------------------------------
+// Same shape of bug, worse consequence. Vanilla spawns the crystal exactly one
+// level below the deepest shortcut you own, which under AP means the crystal
+// LOCATION for level L needs L-2 Progressive Shortcut ITEMS to even appear --
+// a requirement the logic knows nothing about, so generation could bury the
+// item that spawns a crystal behind that same crystal. Spawn on any level
+// whose shortcut location is still unchecked.
+g.QueueFindReplace("gml_Object_obGameControl_Create_0",
+    "if (!global.levelSkipped && global.enemyLevel == (global.skipLevel + 1))",
+    "if (!global.levelSkipped && ap_crystal_spawn_ok())");
+
 // -- merchant ---------------------------------------------------------------
 // set_merchant now advertises category "unlock" rather than a specific skill
 // group, because the location is the purchase, not the skill.
 g.QueueFindReplace("gml_Script_activate_block",
     "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\")",
     "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\" || sellitem == \"unlock\")");
+
+// A Merchant advertises "whatever unlock is next", and that answer moves the
+// instant any Merchant is bought from -- so a second Merchant on the same level
+// went on naming the location the first one had already taken, right through
+// its own sale. Anchored AFTER the "sold" marker so the merchant just bought
+// from is left alone and the float-up text and the unlock popup above still
+// read the item that was actually purchased.
+g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
+@"argument0.decor.longtext = ""sold"";
+argument0.decor.longtext2 = """";
+save_game(""save"");",
+@"argument0.decor.longtext = ""sold"";
+argument0.decor.longtext2 = """";
+save_game(""save"");
+ap_merchant_restock();");
+
+// -- tutorial ---------------------------------------------------------------
+// The numbered pages pause the game to explain vanilla mechanics to a player
+// who has just read an Archipelago setup guide, and tutorpage lives in the
+// save, so a fresh modded save replays all of them. argument0 == -1 is not a
+// page: it is the "you have unlocked X" popup, which is how a Merchant
+// purchase reports what it handed over, so it is deliberately still allowed
+// through.
+g.QueuePrepend("gml_Script_showtutorial",
+    "if (argument0 >= 0 && ap_tutorial_off()) { exit; }");
 
 // -- "what am I buying?" ----------------------------------------------------
 // Hooked at the single draw call rather than in the localisation branches
@@ -254,6 +316,72 @@ if (global.mapBonus == 8 && global.isPacifist)",
 ap_level_cleared(global.enemyLevel);
 play_sound(22);
 if (global.mapBonus == 8 && global.isPacifist)");
+
+// -- shrines ----------------------------------------------------------------
+// One hook. Shrine *spawning* is left completely alone: a level that has used
+// up its Archipelago slots still grows shrines, they just stop checking
+// anything. ap_shrine_check returning early is the whole of "no more checks
+// here", so there is nothing to gate at the place_tiles end.
+//
+// Every one of activate_block's thirteen shrine branches ends by
+// calling destroy_shrine, so prepending there catches all of them -- including
+// spShrine_GOG, which only exists on the GOG build. Prepended rather than
+// appended because destroy_shrine is what blanks the sprite to spShrine_Dead,
+// and ap_shrine_check needs to see which shrine it was.
+g.QueuePrepend("gml_Script_destroy_shrine", "ap_shrine_check(argument0);");
+
+// -- level locks ------------------------------------------------------------
+// The descent happens in exactly one place: the portal countdown reaching zero
+// in obGameControl's Step. Diverting it there means the level-clear check has
+// already been sent (activate_block runs when the hero enters the portal, 15
+// frames earlier) and global.h_* already holds the hero, so the village can be
+// rebuilt around the same character.
+//
+// The village Teleportation Shrine is a second way down and is NOT hooked
+// here; it is capped through global.skipLevel in ap_apply_state instead.
+g.QueueTrimmedLinesFindReplace("gml_Object_obGameControl_Step_0",
+@"else
+{
+global.enemyLevel += 1;
+current_level = global.mapCode;",
+@"else if (!ap_level_open(global.enemyLevel + 1))
+{
+ap_to_village();
+}
+else
+{
+global.enemyLevel += 1;
+current_level = global.mapCode;");
+
+// -- DeathLink --------------------------------------------------------------
+// `global.deadCount == 40` is an equality, so it is true on exactly one frame
+// per run -- the frame the game gives up and puts obGameOver on screen. That
+// makes it a latch-free send point, and it sits after Phoenix has had its
+// chance to revive, so a death the hero walked away from is never announced.
+g.QueueTrimmedLinesFindReplace("gml_Object_obGameControl_Step_0",
+@"var uiGameOver = instance_create(480, 360 + view_yview[0], obGameOver);
+uiGameOver.depth = -2500;",
+@"var uiGameOver = instance_create(480, 360 + view_yview[0], obGameOver);
+uiGameOver.depth = -2500;
+ap_death();");
+
+// A DeathLink cause is a whole sentence from another game ("Bob was killed by
+// a Goomba"), so pasting it after "Killed by " reads as nonsense. ap_death_line
+// swaps the whole line out when the death on screen is a DeathLink and returns
+// its argument untouched otherwise -- which is why every language branch can be
+// wrapped mechanically. Only the five single-player ones matter; the co-op
+// twins below them read global.death_cause2 and co-op never connects.
+string[] killedBy = {
+    "\"Mortos por: \" + translate(global.death_cause)",
+    "\"Get\u00f6tet von: \" + translate(global.death_cause)",
+    "\"Muerto por: \" + translate(global.death_cause)",
+    "\"Tu\u00e9 par : \" + translate(global.death_cause)",
+    "\"Killed by \" + global.death_cause",
+};
+foreach (string expr in killedBy)
+    g.QueueFindReplace("gml_Object_obGameOver_Draw_0",
+        "draw_text(x, y - 55, " + expr + ");",
+        "draw_text(x, y - 55, ap_death_line(" + expr + "));");
 
 // -- goal -------------------------------------------------------------------
 g.QueueTrimmedLinesFindReplace("gml_Object_obGameControl_Step_0",

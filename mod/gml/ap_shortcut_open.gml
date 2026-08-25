@@ -13,6 +13,12 @@ if (!global.ap_enabled)
 {
     return 1;
 }
+// Not a location this seed: the crystal is vanilla again, and vanilla gates
+// this branch on nothing but `global.mapCode != 0`.
+if (!global.ap_shortcuts_on)
+{
+    return 1;
+}
 var l = argument0;
 if (l < 2 || l > global.ap_final_level)
 {

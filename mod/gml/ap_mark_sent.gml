@@ -46,6 +46,18 @@ for (var l = 1; l < global.ap_final_level; l += 1)
     }
 }
 
+for (var l = 1; l < global.ap_final_level; l += 1)
+{
+    for (var n = 1; n <= global.ap_max_shrines; n += 1)
+    {
+        if (global.ap_shrine_loc[l, n] == lid)
+        {
+            global.ap_sent_shrine[l, n] = 1;
+            exit;
+        }
+    }
+}
+
 if (lid == global.ap_goal_loc)
 {
     global.ap_sent_goal = 1;

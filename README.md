@@ -19,9 +19,12 @@ client to run.** Connect from the in-game Options menu and play.
 
 | | |
 |---|---|
-| **116 locations** | 50 merchant unlocks, 45 shop upgrades, 10 shortcut crystals, 10 level clears, 1 goal |
-| **Items** | 50 traits/powers, 15 each of Progressive Damage / Max HP / Orb XP, 10 Progressive Shortcut |
+| **181 locations** (default) | 50 merchant unlocks, 60 shop upgrades, 50 shrines, 10 shortcut crystals, 10 level clears, 1 goal |
+| **Items** | 50 traits/powers, 20 each of Progressive Damage / Max HP / Orb XP, 10 Progressive Shortcut, 10 Progressive Level Access, filler and traps |
 | **Goal** | Defeat the Chosen One |
+
+The shop-upgrade and shrine counts are yaml settings, so the location and item
+totals move with them.
 
 - **Merchants** sell an unlock rather than a specific skill. A merchant on
   level *L* fills one of *that level's* five slots, so where you shop matters.
@@ -30,13 +33,47 @@ client to run.** Connect from the in-game Options menu and play.
 - **Shortcut crystals** are checks, and still cost coins to light, so a
   crystal is a real trade-off against shopping. `Progressive Shortcut` items
   are what actually let you start deeper, and *using* a shortcut you already
-  own is free.
+  own is free. A crystal appears on any level whose shortcut is still
+  unchecked — one per run, as always.
 - **Clearing a level** checks a location, whether you killed the Guardian or
   opened the portal with keys.
+- **Levels are locked** by default. `Progressive Level Access` items open
+  levels 2-11 in order; taking the exit portal of a level whose successor is
+  still locked counts the clear and then **ends the run** — back to the village
+  and the hero-select screen, exactly as if you had died. Coins, unlocks and
+  shop tiers are permanent as always, so nothing is lost but the hero.
+- **Shrines** are checks. The first few you activate on each level check a
+  location, and they still do exactly what they always did — the check rides
+  along. Once a level's are used up its shrines are back to being ordinary
+  shrines; they keep spawning and keep working either way.
+- **DeathLink**, when enabled, sends your death screen's own sentence out to
+  the multiworld, and kills your hero when someone else's arrives.
+- **Filler** is Coin Cache, Shrine Boost (a random shrine effect, free),
+  Mana Refill and Skeleton Key. **Traps** are Alarm Trap, which does what
+  stepping on an alarm does — including the permanent `global.alarms` bump
+  that gives every enemy for the rest of the run extra health.
 - Every shop **shows the item it is about to hand over**, including whose
   world it belongs to.
 
-Options: `include_shortcuts`, `include_level_clears`.
+### Options
+
+| option | default | what it does |
+|---|---|---|
+| `include_shortcuts` | on | shortcut crystals are locations |
+| `include_level_clears` | on | clearing each of levels 1-10 is a location |
+| `shop_upgrade_tiers` | 20 | tiers each hub shop sells, 15-30 |
+| `shop_price_step` | 25 | coins the price climbs per tier already bought |
+| `shop_price_cliff` | 25 | extra coins-per-tier added every 10 tiers |
+| `level_locks` | on | levels 2-11 need `Progressive Level Access` |
+| `shrine_checks` | 5 | shrines per level that also check a location, 0-10 (0 = off) |
+| `trap_fill` | 0 | percent of leftover filler slots that become traps |
+| `death_link` | off | standard Archipelago DeathLink |
+
+The two price settings reproduce vanilla at their defaults: the Nth upgrade
+from a shop costs `N * (step + floor(N / 10) * cliff)`. Vanilla's price wall is
+that cliff, and it fires every **ten** tiers rather than fifteen — with the old
+15-tier cap it therefore hit exactly once, at tier 10. Set `shop_price_cliff`
+to 0 for a straight line.
 
 ---
 
@@ -50,26 +87,14 @@ into your Archipelago install's `custom_worlds/` folder.
 
 ### 2. The game (every player)
 
-Some pieces belong to other projects and are not ours to redistribute, so you
-fetch those yourself:
-
-- **Python** — <https://www.python.org/downloads/>.
-  During setup, **tick "Add python.exe to PATH"**.
-- **UndertaleModTool**, CLI build —
-  [releases](https://github.com/UnderminersTeam/UndertaleModTool/releases).
-  Grab `UTMT_CLI_<version>-Windows.zip`.
-- **`gm-apclientpp.dll`, the 32-bit build** —
-  [releases](https://github.com/black-sliver/gm-apclientpp/releases).
-  **The 64-bit build will not work** — the GameMaker 1.4 runner is 32-bit.
-
-Then:
+You need **Python** — <https://www.python.org/downloads/>, and during setup
+**tick "Add python.exe to PATH"**. Nothing else: UndertaleModTool and
+`gm-apclientpp.dll` are inside the patcher zip.
 
 1. **Copy your whole game folder** somewhere outside Steam and work on the
    copy. Steam can "verify" your real install and quietly undo everything.
 2. **Extract `vdh-ap-patcher.zip` into that game folder.**
-3. Put **`gm-apclientpp.dll`** in the same folder, next to `data.win`.
-4. Extract **UndertaleModTool** into `build\utmt\`.
-5. **Double-click `patch.bat`.**
+3. **Double-click `patch.bat`.**
 
 You should end up with this, and nothing to type:
 
@@ -77,12 +102,13 @@ You should end up with this, and nothing to type:
 Vertical Drop Heroes HD\
     data.win
     Vertical Drop Heroes HD.exe
-    gm-apclientpp.dll
+    gm-apclientpp.dll        <-- from the zip
     patch.bat
     build\
         build.py
         utmt\UndertaleModCli.exe
     gml\
+    third-party\             <-- licenses, and UTMT's GPL source
 ```
 
 The patcher needs no configuration because it is sitting in the folder it
@@ -127,8 +153,16 @@ to Steam — and Steam then launches **its own** registered copy from
 
 `build.py` writes `steam_appid.txt` next to the exe, which makes that check
 return false so your patched copy actually runs. If the mod ever appears to do
-nothing at all, check that this file still exists, and read `ap_debug.log`
-beside the exe — if that file is absent, the patched `data.win` is not what ran.
+nothing at all, check that this file still exists, then read `ap_debug.log` —
+if it is absent, the patched `data.win` is not what ran.
+
+**`ap_debug.log` is not beside the exe.** GameMaker redirects the game's file
+writes into its own save area, which for this build is
+`%LOCALAPPDATA%\Vertical_Drop_Heroes_HD\`. `archipelago.ini` is there too, and
+it is the copy the game actually reads — editing the one next to the exe does
+nothing. **Game Options → Archipelago** prints the exact path, along with the
+build stamp, which is the fastest way to confirm the patch you just ran is the
+one the game is loading.
 
 ---
 
@@ -169,3 +203,18 @@ own the game.
 
 [MIT](LICENSE), covering the mod only -- the GML, the patcher and the
 Archipelago world. Not the game.
+
+The release zip additionally bundles two components that belong to other
+projects, unmodified and under their own licenses:
+
+| component | license |
+|---|---|
+| [UndertaleModTool](https://github.com/UnderminersTeam/UndertaleModTool) 0.9.1.2 | GPL-3.0 |
+| [gm-apclientpp](https://github.com/black-sliver/gm-apclientpp) v0.4.9-3 (win32) | MIT |
+
+Both are vendored in [mod/third-party/](mod/third-party/) as the exact archives
+their authors published, alongside their licenses and -- for the GPL binary --
+its Corresponding Source. See
+[mod/third-party/README.md](mod/third-party/README.md). The patcher runs
+`UndertaleModCli.exe` as a separate process, so the GPL covers that component
+alone and not this project's own code.

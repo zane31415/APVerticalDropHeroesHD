@@ -27,6 +27,10 @@ for (var l = 0; l <= global.ap_final_level; l += 1)
 {
     global.ap_sent_short[l] = 0;
     global.ap_sent_clear[l] = 0;
+    for (var n = 0; n <= global.ap_max_shrines; n += 1)
+    {
+        global.ap_sent_shrine[l, n] = 0;
+    }
 }
 global.ap_sent_goal = 0;
 for (var g = 0; g < 3; g += 1)

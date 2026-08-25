@@ -22,6 +22,41 @@ else:
 
 import defs  # noqa: E402
 
+import datetime
+import subprocess
+
+
+def build_stamp():
+    """A short identity for the source this patch was generated from.
+
+    Baked into the game and shown on the overlay, because "did the thing I
+    just patched actually become the thing I am running?" has no other answer
+    from inside the game -- and when it is no, every symptom looks like a mod
+    bug instead of a stale file. It is derived here rather than at patch time
+    on purpose: what matters is which GML went in, not when someone ran it.
+
+    In a released bundle that identity is BUILD.txt, written by package.py and
+    extracted into the game folder. In the dev repo there is none, so fall back
+    to the working tree.
+    """
+    for cand in (os.path.join(_HERE, "..", "BUILD.txt"),
+                 os.path.join(_HERE, "..", "..", "BUILD.txt")):
+        if os.path.isfile(cand):
+            with open(cand, encoding="utf-8") as f:
+                line = f.readline().strip()
+            if line:
+                return line
+    try:
+        r = subprocess.run(["git", "-C", _HERE, "describe", "--always", "--dirty"],
+                           capture_output=True, text=True, timeout=10)
+        if r.returncode == 0 and r.stdout.strip():
+            return ("v" + defs.WORLD_VERSION + " dev "
+                    + datetime.date.today().isoformat()
+                    + " (" + r.stdout.strip() + ")")
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return "v" + defs.WORLD_VERSION
+
 OUT = os.path.join(_HERE, "..", "gml", "ap_tables.gml")
 
 GROUP_INDEX = {"trait": 0, "power1": 1, "power2": 2}
@@ -40,7 +75,25 @@ def main():
     a("")
     a(f"global.ap_base_id = {defs.BASE_ID};")
     a(f"global.ap_final_level = {defs.FINAL_LEVEL};")
+    a("// The id space always describes MAX_SHOP_TIERS tiers so that every")
+    a("// player in a multiworld agrees on ids; ap_shop_tiers is how many of")
+    a("// them this slot actually plays, and slot_data overrides it on connect.")
     a(f"global.ap_max_shop_tier = {defs.MAX_SHOP_TIERS};")
+    a(f"global.ap_shop_tiers = {defs.DEFAULT_SHOP_TIERS};")
+    a(f"global.ap_shop_price_step = {defs.DEFAULT_SHOP_PRICE_STEP};")
+    a(f"global.ap_shop_price_cliff = {defs.DEFAULT_SHOP_PRICE_CLIFF};")
+    a(f"global.ap_shop_cliff_every = {defs.SHOP_PRICE_CLIFF_EVERY};")
+    a("// Level locks default ON, matching the option's default, so a game")
+    a("// that somehow never sees slot_data still behaves like the yaml says.")
+    a("global.ap_level_locks = 1;")
+    a(f"global.ap_max_shrines = {defs.MAX_SHRINES_PER_LEVEL};")
+    a(f"global.ap_shrine_checks = {defs.DEFAULT_SHRINE_CHECKS};")
+    a(f"global.ap_shrine_levels = {len(defs.SHRINE_LEVELS)};")
+    a("global.ap_death_link = 0;")
+    a("// Which build of the mod this is. ap_draw puts it on screen and ap_boot")
+    a("// logs it, so 'am I running what I just patched?' is answerable without")
+    a("// guessing from behaviour.")
+    a(f"global.ap_build = {gml_str(build_stamp())};")
     a("")
 
     # --- skill locations/items: [group, index] -> id, and name lookup --------
@@ -107,10 +160,33 @@ def main():
             a(f"global.ap_goal_loc = {lid};")
     a("")
 
-    # --- filler --------------------------------------------------------------
+    # --- shrines -------------------------------------------------------------
+    for name, lid, cat, meta in defs.LOCATIONS:
+        if cat == "shrine":
+            a(f"global.ap_shrine_loc[{meta['level']}, {meta['slot']}] = {lid};")
+    a("")
+
+    # --- level access --------------------------------------------------------
     for name, iid, cls, cnt, meta in defs.ITEMS:
-        if meta.get("filler"):
-            a(f"global.ap_filler_item = {iid};")
+        if meta.get("level_access"):
+            a(f"global.ap_level_item = {iid};")
+    a("")
+
+    # --- filler and traps ----------------------------------------------------
+    # One flat table rather than a global per item: ap_receive_item scans it and
+    # hands the effect key to ap_effect, so a new filler is a line in defs.py
+    # plus a branch in ap_effect.gml and nothing else.
+    a("// filler/trap effects: ap_fx_kind[i] is what ap_effect() dispatches on")
+    n = 0
+    for name, iid, cls, cnt, meta in defs.ITEMS:
+        if not (meta.get("filler") or meta.get("trap")):
+            continue
+        a(f"global.ap_fx_item[{n}] = {iid};")
+        a(f"global.ap_fx_kind[{n}] = {gml_str(meta['effect'])};")
+        a(f"global.ap_fx_name[{n}] = {gml_str(name)};")
+        a(f"global.ap_fx_trap[{n}] = {1 if meta.get('trap') else 0};")
+        n += 1
+    a(f"global.ap_fx_count = {n};")
     a("")
     a(f"global.ap_loc_count = {len(defs.LOCATIONS)};")
     a(f"global.ap_item_id_max = {max(i for _n, i, _c, _ct, _m in defs.ITEMS)};")
