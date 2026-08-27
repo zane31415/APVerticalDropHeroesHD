@@ -17,7 +17,7 @@ GAME_NAME = "Vertical Drop Heroes HD"
 # checked against this at package time, gen_gml.py bakes it into the game as
 # global.ap_build, and package.py stamps it into the patcher's BUILD.txt. A
 # release where those three disagree is a release nobody can debug.
-WORLD_VERSION = "0.3.0"
+WORLD_VERSION = "0.3.1"
 
 # The Archipelago this world is developed and generated against.
 MIN_AP_VERSION = "0.6.7"

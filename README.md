@@ -48,6 +48,10 @@ totals move with them.
   shrines; they keep spawning and keep working either way.
 - **DeathLink**, when enabled, sends your death screen's own sentence out to
   the multiworld, and kills your hero when someone else's arrives.
+- **End This Run Early**, a fourth entry on the pause menu, retires the hero
+  and returns to the village without dying for it — so a run with nothing left
+  to check does not have to be ended by throwing your hero at something, which
+  under DeathLink would take someone else's with it.
 - **Filler** is Coin Cache, Shrine Boost (a random shrine effect, free),
   Mana Refill and Skeleton Key. **Traps** are Alarm Trap, which does what
   stepping on an alarm does — including the permanent `global.alarms` bump

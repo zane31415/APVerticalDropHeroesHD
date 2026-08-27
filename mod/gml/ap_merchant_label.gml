@@ -7,11 +7,14 @@
 // sale on a level announced the item belonging to the location the first sale
 // had already taken. It checked the right location; only the name was stale.
 //
-// ap_merchant_restock was the first attempt at this and could not fix it: it
-// can only reach Merchants that exist as instances right now, and place_tiles
-// builds a level's rows as the player descends, so the Merchant further down
-// is often not created yet when the one above it is sold (the live logs show
-// "restock: 1 Merchant(s)" at every sale -- only the one just bought from).
+// ap_merchant_restock was the first attempt at this and cannot fix it. Its
+// `with (obDecor)` only reaches ACTIVE instances, and obGameControl's Step
+// deactivates everything outside a band around the camera every time the top
+// grid cell changes -- obDecor by name, then a region activate for the band.
+// A Merchant off screen is a deactivated instance, invisible to `with`, which
+// is why every live log says "restock: 1 Merchant(s)": the one just bought
+// from, standing right there. (Rows are also built as the player descends, so
+// a Merchant further down may not exist at all yet.)
 //
 // So the name is derived at the point of sale instead, from the location the
 // purchase is about to check, which cannot be a frame behind anything. Called

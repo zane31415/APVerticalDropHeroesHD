@@ -75,6 +75,7 @@ string[] newScripts = {
     "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
     "ap_sd_num", "ap_slot_data",
     "ap_level_open", "ap_to_village",
+    "ap_pause_extra", "ap_pause_draw", "ap_end_run",
     "ap_death", "ap_death_recv", "ap_dl_apply", "ap_death_line",
     "ap_is_shrine", "ap_shrine_next", "ap_shrine_check",
     "ap_effect", "ap_consume", "ap_can_act", "ap_shrine_boost", "ap_alarm_trap",
@@ -126,7 +127,7 @@ g.QueueAppend("gml_Object_btnStartMenu_Draw_0", "ap_draw(); ap_menu_draw();");
 
 g.QueueAppend("gml_Object_obGameControl_Create_0", "ap_boot();");
 g.QueueAppend("gml_Object_obGameControl_Step_0", "ap_step();");
-g.QueueAppend("gml_Object_obGameControl_Draw_64", "ap_draw();");
+g.QueueAppend("gml_Object_obGameControl_Draw_64", "ap_draw(); ap_pause_draw();");
 
 // Connect only when a run actually starts. Doing it at boot meant the server's
 // checked-location set arrived while the player was mid-session and
@@ -271,6 +272,34 @@ save_game(""save"");",
 argument0.decor.longtext2 = """";
 save_game(""save"");
 ap_merchant_restock();");
+
+// -- "End This Run Early" ---------------------------------------------------
+// A fourth entry on the pause menu's first page, because vanilla's only exit
+// from a run is to die and dying now costs everyone else in the multiworld a
+// DeathLink. ap_pause_extra decides whether it exists at all, and all three
+// hooks below ask it rather than repeating the test.
+//
+// The count first: pause_control wraps global.menu_choice on
+// max_choices[menu_page], so without this the row could be drawn but never
+// selected. It is assigned on the frame ESC is pressed, which is exactly when
+// "is there a run to end?" wants answering.
+g.QueueFindReplace("gml_Object_obGameControl_Step_0",
+    "global.max_choices[1] = 3;",
+    "global.max_choices[1] = 3 + ap_pause_extra();");
+
+// Then the action. Anchored on the tail of choice 3 (Save and Exit), the only
+// place in pause_control where a save is followed by room_goto.
+g.QueueTrimmedLinesFindReplace("gml_Script_pause_control",
+@"save_game(""save"");
+room_goto(rmMenu);
+}",
+@"save_game(""save"");
+room_goto(rmMenu);
+}
+else if (global.menu_choice == 4)
+{
+    ap_end_run();
+}");
 
 // -- tutorial ---------------------------------------------------------------
 // The numbered pages pause the game to explain vanilla mechanics to a player

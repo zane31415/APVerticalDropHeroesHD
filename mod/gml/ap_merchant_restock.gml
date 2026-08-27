@@ -9,13 +9,13 @@
 // Also called when scout results land, because a Merchant stocked before the
 // server replied fell back to the placeholder "Unlock N".
 //
-// What this does NOT fix is the sale itself. It can only reach Merchants that
-// exist as instances right now, and place_tiles builds a level's rows as the
-// player descends, so the Merchant further down usually does not exist yet
-// when the one above it is sold -- which is why every live log shows
-// "restock: 1 Merchant(s)", the one just bought from. The name announced by a
-// purchase is therefore derived at the point of sale instead; see
-// ap_merchant_label.
+// What this does NOT fix is the sale itself, and it never could: `with` only
+// visits ACTIVE instances, and obGameControl's Step deactivates obDecor
+// outside a band around the camera on every grid-cell change, re-activating
+// only that band. Any Merchant off screen is invisible here -- which is why
+// every live log says "restock: 1 Merchant(s)", meaning the one just bought
+// from. The name a purchase announces is therefore derived at the point of
+// sale instead; see ap_merchant_label.
 //
 // The Merchant just bought from is excluded by the "sold" test: activate_block
 // sets that before this runs, which is exactly why the hook sits after it

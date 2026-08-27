@@ -1,12 +1,13 @@
 # Vertical Drop Heroes HD — Archipelago mod: handoff
 
 Context dump for continuing this work in a fresh session. Written 2026-08-19,
-updated 2026-08-27 for **v0.3.0**.
+updated 2026-08-27 for **v0.3.1**.
 
-**Status: released.** v0.2.0 was the first public release; v0.3.0 is the first
-release built on what live play turned up. DeathLink is confirmed working in
-both directions, a Merchant sale now names the item it actually bought, and
-coins and keys no longer follow the player from one multiworld into the next.
+**Status: released.** v0.2.0 was the first public release; v0.3.0 and v0.3.1
+are built on what live play turned up. DeathLink is confirmed working in both
+directions, a Merchant sale now names the item it actually bought, coins and
+keys no longer follow the player from one multiworld into the next, and a run
+can be ended from the pause menu without dying for it.
 
 `defs.WORLD_VERSION` is the single source of truth for the version.
 `archipelago.json` is checked against it at package time and the build refuses
@@ -302,6 +303,20 @@ re-applies derived stats unconditionally -- not just on reconnect. A first
 connect skipping this let `save_game("load")` values from the previous run
 build the first hero.
 
+**"End This Run Early" is a fourth pause-menu entry.** Vanilla's only exit
+from a run is to die, and under Archipelago dying costs everyone else in the
+multiworld a DeathLink -- so a run that is over (level ahead locked, nothing
+left to check on this one) forced a choice between finishing it and killing
+someone else's hero. `ap_pause_extra` decides whether the entry exists at all
+and all three hooks ask it: `max_choices[1] = 3 + ap_pause_extra()` in
+obGameControl's Step (pause_control wraps the cursor on that count),
+`ap_pause_draw` appended to Draw_64, and `ap_end_run` on choice 4 in
+`pause_control`. `ap_end_run` lands in exactly `ap_to_village`'s end state,
+which is the game's own post-death state, so no DeathLink is possible: the
+death test needs `deadCount == 40`, and the `room_restart` runs
+obGameControl's Create, which zeroes deadCount and -- with `heroPicked`
+cleared -- raises `selectScreen`, so deadCount can never climb.
+
 **Coins and keys reset per slot, not per connect.** `global.coins` and
 `global.keys` are vanilla save state that no item stream can recompute, so
 they cannot be zeroed with everything else on connect -- coins are meant to
@@ -355,13 +370,19 @@ read `decor.longtext2`, a snapshot from when that Merchant was placed.
 check and is hooked immediately before `new_unlock`, while
 `ap_merchant_next()` still points at that slot.
 
-`ap_merchant_restock` was the first attempt and could not fix it: it only
-reaches Merchants that exist as instances, and `place_tiles` builds a level's
-rows as the player descends, so the Merchant further down usually has not been
-created yet when the one above it is sold -- every live log shows
-`restock: 1 Merchant(s)`, the one just bought from. It stays, for the signs on
-Merchants that *are* standing there, and because it also runs when scout
-results land, which is what clears the "Unlock N" placeholder.
+`ap_merchant_restock` was the first attempt and never could have fixed it.
+`with (obDecor)` visits only *active* instances, and obGameControl's Step
+deactivates obDecor outside a band around the camera every time the camera's
+top grid cell changes, re-activating just that band -- so a Merchant off
+screen is invisible to it. That is why every live log reads
+`restock: 1 Merchant(s)`: the one being bought from. It stays, for the signs
+on Merchants that *are* on screen, and because it also runs when scout results
+land, which is what clears the "Unlock N" placeholder.
+
+**Culling is a trap for any `with (obDecor)`.** Anything that sweeps the level
+sees only what is on screen. If a sweep has to cover the whole level, it needs
+`instance_activate_object` first and the band restored after -- which is why
+nothing in the mod does one.
 
 **Item arrival rerolls the hero-select screen.** `generate_cbox` bakes the
 unlock set and shop levels into a candidate when it builds it, and
