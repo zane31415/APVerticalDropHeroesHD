@@ -1,11 +1,12 @@
 # Vertical Drop Heroes HD — Archipelago mod: handoff
 
 Context dump for continuing this work in a fresh session. Written 2026-08-19,
-updated 2026-08-25 for **v0.2.0**.
+updated 2026-08-27 for **v0.3.0**.
 
-**Status: released.** v0.2.0 is the first public release. The mod connects to a
-live server, sends checks and receives items across every category, and has
-been played.
+**Status: released.** v0.2.0 was the first public release; v0.3.0 is the first
+release built on what live play turned up. DeathLink is confirmed working in
+both directions, a Merchant sale now names the item it actually bought, and
+coins and keys no longer follow the player from one multiworld into the next.
 
 `defs.WORLD_VERSION` is the single source of truth for the version.
 `archipelago.json` is checked against it at package time and the build refuses
@@ -301,6 +302,20 @@ re-applies derived stats unconditionally -- not just on reconnect. A first
 connect skipping this let `save_game("load")` values from the previous run
 build the first hero.
 
+**Coins and keys reset per slot, not per connect.** `global.coins` and
+`global.keys` are vanilla save state that no item stream can recompute, so
+they cannot be zeroed with everything else on connect -- coins are meant to
+survive between runs on one slot, and every run start connects. They also
+cannot be left alone: the next multiworld inherited the last one's whole
+purse. `ap_purse_check` keys the wipe on identity instead, comparing
+`global.ap_progress_key` (seed + slot) against a `[Progress] Purse` mark in
+`archipelago.ini`. Same key, keep the purse; different key, zero it and
+`save_game("save")` at once so it does not come back on the next launch.
+Storing the mark in the ini is what lets one slot close and reopen with its
+coins. It runs from `ap_dispatch` right after `ap_progress_load`, because the
+key needs the seed, which only exists once RoomInfo has arrived -- a few frames
+into level 1 on a run-start connect.
+
 **Progress counts checks; power counts items.** Prices and the merchant spawn
 cap derive from locations *checked* (`ap_shop_price`, `ap_refresh_counters`
 maintaining `global.unlocked`). Stats derive from items *received*.
@@ -330,15 +345,23 @@ it -- keys, phoenix, startLevel, levelSkipped, the whole `else` branch of
 obGameControl's Create -- producing a level-20 hero in a fresh run's world,
 which is not a state the game reaches any other way.
 
-**Merchants restock after every sale.** What a Merchant advertises is
-"whatever `ap_merchant_next()` says", and that moves the instant *any* Merchant
-is bought from. `set_merchant` only ran at spawn, so a second Merchant on the
-same level went on naming the location the first had taken -- through its own
-sale, so `global.last_skill` and the "you have unlocked X" popup were wrong
-too. `ap_merchant_restock` is hooked after activate_block sets `longtext =
-"sold"`, deliberately: the float-up text and the popup above it must still read
-the item that was actually purchased. It also runs when scout results land,
-which is what clears the "Unlock N" placeholder.
+**A Merchant sale names its item at the point of sale.** What a Merchant
+advertises is "whatever `ap_merchant_next()` says", and that moves the instant
+*any* Merchant is bought from. `set_merchant` only ran at spawn, so the second
+sale on a level announced the location the first had already taken:
+`global.last_skill`, the "you have unlocked X" popup and the float-up text all
+read `decor.longtext2`, a snapshot from when that Merchant was placed.
+`ap_merchant_label` re-derives the name from the location the sale is about to
+check and is hooked immediately before `new_unlock`, while
+`ap_merchant_next()` still points at that slot.
+
+`ap_merchant_restock` was the first attempt and could not fix it: it only
+reaches Merchants that exist as instances, and `place_tiles` builds a level's
+rows as the player descends, so the Merchant further down usually has not been
+created yet when the one above it is sold -- every live log shows
+`restock: 1 Merchant(s)`, the one just bought from. It stays, for the signs on
+Merchants that *are* standing there, and because it also runs when scout
+results land, which is what clears the "Unlock N" placeholder.
 
 **Item arrival rerolls the hero-select screen.** `generate_cbox` bakes the
 unlock set and shop levels into a candidate when it builds it, and
@@ -479,13 +502,21 @@ Needs **API version 2** from the DLL; see trap #14. `global.ap_bounce_ok`
 records whether we got it, and `global.ap_death_link` is the AND of that and
 the yaml.
 
+Confirmed working both ways in live play. What made it look dead for a while
+was the multiworld, not the mod: the server routes a Bounce only to slots that
+carry the DeathLink tag, so with no other DeathLink game connected there is
+nobody to receive one and nothing comes back. Test it against a second tagged
+slot before suspecting the code.
+
 A refused descent (`ap_to_village`) is deliberately *not* a death and sends
 nothing: `ap_death` hangs off `global.deadCount == 40`, deadCount only climbs
 while gHero is missing and `selectScreen` is 0, and the village rebuild zeroes
 the first and sets the second. The hero is retired, not killed.
 
 Send: `global.deadCount == 40` in obGameControl's Step. An equality, so exactly
-one frame per run, and after Phoenix has had its revive.
+one frame per run, and after Phoenix has had its revive. The sentence names
+`global.ap_slot`, not the hero: the hero's generated name means nothing to the
+other worlds reading the line, which know this one only by its slot.
 Receive: `ap_bounced` -> `ap_death_recv` (filter by tag, drop anything whose
 `source` is us, because the server echoes to the sender) -> queued ->
 `ap_dl_apply` from `ap_step` once there is a living hero, else dropped.
@@ -497,30 +528,13 @@ The same test is what `ap_death_line` uses to replace the game-over screen's
 
 ## 6. Outstanding
 
-**Known bugs at v0.2.0, both reported from live play and neither reproduced
-from the code:**
+**Known bugs, reported from live play:**
 
-- **A second Merchant on the same level still announces the first one's item.**
-  `ap_merchant_restock` was written for exactly this and does not fix it. What
-  has been ruled out: the hook is present in the patched `activate_block`
-  (decompiled and confirmed, right after `save_game("save")`), `longtext` is
-  declared on every `obDecor` so the `with` loop cannot be silently erroring,
-  and the ordering means the popup should read the item actually bought.
-  `ap_merchant_check` and `ap_merchant_restock` both log now: look for
-  `restock: N Merchant(s) on this level, M restocked` and what each was set to.
-- **DeathLink sends nothing.** The API-version bug (trap #14) was real and is
-  fixed, but that did not resolve it. `ap_death` logs the return of
-  `apclient_death_link`, and `ap_slot_data` logs whether the tag was queued, so
-  the log should now distinguish "never called", "called and refused" and
-  "sent, nobody received".
 - **An intermittent `show_message` "Unknown exception" from the DLL.** Seen
   once, killing a boss that had already been killed -- which sends nothing, so
   it is likely inbound rather than outbound. `apclient_render_json` choking on
   another world's `PrintJSON` is the leading guess. `ap_dispatch` names every
   event and dumps the raw packet before rendering it, both under `Debug=1`.
-
-Set `Debug=1` in `archipelago.ini` (the one in the save area) before trying to
-reproduce any of these.
 - **`include_shortcuts: false` was quietly broken** before the scout fix: the
   patch suppresses the vanilla `global.skipLevel` / `global.startLevel` lines
   at the crystal, so with the category off a crystal took the coins and did
@@ -538,6 +552,9 @@ reproduce any of these.
 - Shrine/statue AP annotations, merchant title/description, shortcut re-buy,
   and the menu alignment were all fixed in `ed3d583`; if any recur, the hooks
   are `ap_desc_suffix` / `ap_title_fix` / `ap_shortcut_open` / `ap_menu_draw`.
+
+Set `Debug=1` in `archipelago.ini` (the one in the save area) before trying to
+reproduce any of these.
 
 ## 7. Verification habits worth keeping
 

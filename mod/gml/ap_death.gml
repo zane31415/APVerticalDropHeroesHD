@@ -6,8 +6,10 @@
 // and needs no latch of its own -- and it is *after* Phoenix has had its
 // chance, so a revived hero never announces a death it walked away from.
 //
-// The cause text is the same sentence the death screen shows, because that is
-// the line other players will read in their own client.
+// The cause text is the same sentence the death screen shows, except for who
+// it names: the hero's randomly generated name means nothing to the rest of
+// the multiworld, which knows this world only by its slot name, so that is
+// what the sentence other players read is built around.
 
 if (!global.ap_enabled || !global.ap_ready || !global.ap_death_link)
 {
@@ -29,10 +31,10 @@ if (global.ap_dl_cause != "" && global.death_cause == global.ap_dl_cause)
     exit;
 }
 
-var who = "The hero";
-if (instance_exists(global.gHeroBar))
+var who = global.ap_slot;
+if (who == "")
 {
-    who = global.gHeroBar.name;
+    who = "The hero";
 }
 
 var cause = who + " is dead!";

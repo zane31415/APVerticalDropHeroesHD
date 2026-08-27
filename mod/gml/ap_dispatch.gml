@@ -31,6 +31,9 @@ if (src == "ap_slot_connected")
     ap_slot_data();
     // The seed is known by now, which is what the progress mark is keyed on.
     ap_progress_load();
+    // And with the key built, whether this is the same game as last time --
+    // which is what decides if the coins in the save are still ours.
+    ap_purse_check();
     global.ap_scout_sent = 0;   // re-scout: the fill differs per seed
     exit;
 }

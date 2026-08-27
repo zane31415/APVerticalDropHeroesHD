@@ -63,7 +63,8 @@ string[] newScripts = {
     "ap_shop_check", "ap_shop_open", "ap_level_cleared",
     "ap_shortcut_check", "ap_goal",
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
-    "ap_merchant_restock", "ap_reroll_select", "ap_tutorial_off",
+    "ap_merchant_restock", "ap_merchant_label",
+    "ap_reroll_select", "ap_tutorial_off",
     "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_shortcut_cost", "ap_teleport_cost",
@@ -77,7 +78,7 @@ string[] newScripts = {
     "ap_death", "ap_death_recv", "ap_dl_apply", "ap_death_line",
     "ap_is_shrine", "ap_shrine_next", "ap_shrine_check",
     "ap_effect", "ap_consume", "ap_can_act", "ap_shrine_boost", "ap_alarm_trap",
-    "ap_progress_load", "ap_progress_save",
+    "ap_progress_load", "ap_progress_save", "ap_purse_check",
     "ap_merchant_spawn_ok", "ap_crystal_spawn_ok",
 };
 foreach (string s in newScripts)
@@ -244,12 +245,24 @@ g.QueueFindReplace("gml_Script_activate_block",
     "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\")",
     "if (sellitem == \"trait\" || sellitem == \"power1\" || sellitem == \"power2\" || sellitem == \"unlock\")");
 
-// A Merchant advertises "whatever unlock is next", and that answer moves the
-// instant any Merchant is bought from -- so a second Merchant on the same level
-// went on naming the location the first one had already taken, right through
-// its own sale. Anchored AFTER the "sold" marker so the merchant just bought
-// from is left alone and the float-up text and the unlock popup above still
-// read the item that was actually purchased.
+// The unlock popup and the float-up text both name argument0.decor.longtext2,
+// which set_merchant wrote when this Merchant was PLACED -- a snapshot of what
+// ap_merchant_next() said then. Re-derive it from the location the sale is
+// about to check, before new_unlock consumes that slot, so what the player is
+// told they bought is what the multiworld actually recorded.
+g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
+@"new_unlock(argument0.decor.longtext2);
+global.last_skill = argument0.decor.longtext2;",
+@"argument0.decor.longtext2 = ap_merchant_label(argument0.decor.longtext2);
+new_unlock(argument0.decor.longtext2);
+global.last_skill = argument0.decor.longtext2;");
+
+// The sign on any OTHER Merchant still alive on this level is now a name for a
+// location that has just been taken, so re-stock them too. Anchored AFTER the
+// "sold" marker so the Merchant just bought from is left alone. This cannot
+// stand in for the fix above: it only reaches Merchants that exist as
+// instances, and the rest of a level is not built until the player descends
+// into it.
 g.QueueTrimmedLinesFindReplace("gml_Script_activate_block",
 @"argument0.decor.longtext = ""sold"";
 argument0.decor.longtext2 = """";

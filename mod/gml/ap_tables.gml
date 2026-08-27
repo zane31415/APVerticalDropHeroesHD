@@ -21,7 +21,7 @@ global.ap_death_link = 0;
 // Which build of the mod this is. ap_draw puts it on screen and ap_boot
 // logs it, so 'am I running what I just patched?' is answerable without
 // guessing from behaviour.
-global.ap_build = "v0.2.0 dev 2026-08-25 (9a53fea-dirty)";
+global.ap_build = "v0.3.0 dev 2026-08-27 (71a6713-dirty)";
 
 // skill group: 0=trait 1=power1 2=power2
 global.ap_skill_count[0] = 20;
