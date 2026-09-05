@@ -118,6 +118,12 @@ global.ap_skill_sig = -1;
 // (see ap_death_line), so it must start empty rather than undefined.
 global.ap_dl_pending = 0;
 global.ap_dl_cause = "";
+// How many of this hero's own deaths the amnesty counter has seen. Replaced
+// from the ini on connect (ap_progress_load), same as the item mark.
+global.ap_death_count = 0;
+// Deepest level this slot has ever cleared. Replaced from the ini on connect
+// (ap_progress_load) and raised by ap_reach; sizes a Coin Cache.
+global.ap_depth = 0;
 // Filler and traps that arrived with no hero to give them to.
 global.ap_pend_shrine = 0;
 global.ap_pend_mana = 0;
@@ -132,6 +138,10 @@ global.ap_menu_slot = 8;   // extra entry appended to the Options page
 for (var i = 0; i < global.ap_loc_count; i += 1)
 {
     global.ap_scout[i] = "";
+    // Archipelago's item classification bitmask, kept beside the name so the
+    // info bar can colour what it is about to sell. 0 is "filler", which is
+    // also the right thing to assume for a location not yet scouted.
+    global.ap_scout_flag[i] = 0;
 }
 
 // --- config ---------------------------------------------------------------

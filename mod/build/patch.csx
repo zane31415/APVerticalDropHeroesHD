@@ -60,7 +60,7 @@ string[] newScripts = {
     "ap_receive_item", "ap_apply_state", "ap_check", "ap_mark_sent",
     "ap_skill_in_stock", "ap_skill_name", "ap_log", "ap_draw", "ap_debug",
     "ap_trace",
-    "ap_shop_check", "ap_shop_open", "ap_level_cleared",
+    "ap_shop_check", "ap_shop_open", "ap_level_cleared", "ap_reach",
     "ap_shortcut_check", "ap_goal",
     "ap_merchant_next", "ap_merchant_check", "ap_refresh_counters",
     "ap_merchant_restock", "ap_merchant_label",
@@ -68,8 +68,8 @@ string[] newScripts = {
     "ap_reset_sent",
     "ap_shop_next_tier", "ap_shop_price", "ap_shop_loc_next",
     "ap_shortcut_open", "ap_shortcut_cost", "ap_teleport_cost",
-    "ap_scout_name", "ap_scout_request",
-    "ap_desc_suffix", "ap_title_fix",
+    "ap_scout_name", "ap_scout_flags", "ap_scout_request",
+    "ap_desc_suffix", "ap_desc_draw", "ap_item_colour", "ap_title_fix",
     "ap_connect_now", "ap_connect_on_start",
     "ap_menu_step", "ap_menu_typing", "ap_menu_draw",
     "ap_menu_style", "ap_menu_field", "ap_menu_set", "ap_menu_save",
@@ -314,9 +314,14 @@ g.QueuePrepend("gml_Script_showtutorial",
 // -- "what am I buying?" ----------------------------------------------------
 // Hooked at the single draw call rather than in the localisation branches
 // above it, so every language picks it up for free.
+//
+// The draw is handed over wholesale rather than wrapped, because the item name
+// is coloured by what Archipelago says it is -- red trap, yellow progression,
+// blue useful, white filler -- and one draw_text_ext can only be one colour.
+// ap_desc_draw draws the description, then the "AP:" line under it.
 g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",
     "draw_text_ext(x, y - 10, txt_desc, 20, 450);",
-    "draw_text_ext(x, y - 10, ap_desc_suffix(txt_desc, target), 20, 450);");
+    "ap_desc_draw(x, y - 10, txt_desc, target);");
 // The vanilla merchant branch only sets txt_title for trait/power1/power2/sold,
 // so our "unlock" category left it at the placeholder "Title".
 g.QueueFindReplace("gml_Object_obInfoBar_Draw_0",

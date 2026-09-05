@@ -33,6 +33,15 @@ global.ap_shrine_checks = max(0, min(global.ap_max_shrines, shrines));
 // version that has Bounce at all. An old DLL that silently drops death_link
 // would otherwise look exactly like a yaml that never turned it on.
 global.ap_death_link = (ap_sd_num("death_link", 0) > 0) && global.ap_bounce_ok;
+// Amnesty is purely a send-side filter and costs nothing when off, so it is
+// read whether or not DeathLink survived the AND above. Clamped to the same
+// range the options use: a multiplier of 0 or 1 means "send every death".
+global.ap_death_amnesty = max(0, min(global.ap_max_death_amnesty,
+                                     ap_sd_num("death_amnesty_multiplier",
+                                               global.ap_death_amnesty)));
+global.ap_death_buffer = max(0, min(global.ap_max_death_amnesty,
+                                    ap_sd_num("death_amnesty_buffer",
+                                              global.ap_death_buffer)));
 if (ap_sd_num("death_link", 0) > 0 && !global.ap_bounce_ok)
 {
     ap_log("DeathLink is in the yaml but this gm-apclientpp is too old for it.");
@@ -46,7 +55,9 @@ ap_debug("slot_data: tiers=" + string(global.ap_shop_tiers) +
          " shrines=" + string(global.ap_shrine_checks) +
          " shortcuts=" + string(global.ap_shortcuts_on) +
          " clears=" + string(global.ap_clears_on) +
-         " death_link=" + string(global.ap_death_link));
+         " death_link=" + string(global.ap_death_link) +
+         " amnesty=" + string(global.ap_death_amnesty) +
+         "+" + string(global.ap_death_buffer));
 
 // Shop tiers and level locks both feed derived state, and the tallies were
 // just cleared, so re-derive now rather than waiting for the first item.

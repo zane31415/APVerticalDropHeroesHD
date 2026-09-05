@@ -42,6 +42,10 @@ for (var l = 1; l < global.ap_final_level; l += 1)
     if (global.ap_clear_loc[l] == lid)
     {
         global.ap_sent_clear[l] = 1;
+        // Also the one route by which a machine that has never played this
+        // slot learns how deep it has already been: the server replays the
+        // whole checked set through here on connect.
+        ap_reach(l);
         exit;
     }
 }

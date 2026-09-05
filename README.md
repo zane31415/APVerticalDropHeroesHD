@@ -53,11 +53,16 @@ totals move with them.
   to check does not have to be ended by throwing your hero at something, which
   under DeathLink would take someone else's with it.
 - **Filler** is Coin Cache, Shrine Boost (a random shrine effect, free),
-  Mana Refill and Skeleton Key. **Traps** are Alarm Trap, which does what
-  stepping on an alarm does — including the permanent `global.alarms` bump
-  that gives every enemy for the rest of the run extra health.
+  Mana Refill and Skeleton Key. The first two are twice as likely as the other
+  two — they are the ones that change a run rather than tidy it up. A Coin
+  Cache is worth 25 coins per level, sized on the deepest level you have
+  **cleared** plus one, so it does not matter where your hero happened to be
+  standing when it arrived. **Traps** are Alarm Trap, which does what stepping
+  on an alarm does — including the permanent `global.alarms` bump that gives
+  every enemy for the rest of the run extra health.
 - Every shop **shows the item it is about to hand over**, including whose
-  world it belongs to.
+  world it belongs to, colour-coded by what it is: red for a trap, yellow for
+  progression, blue for useful, white for filler.
 
 ### Options
 
@@ -67,17 +72,26 @@ totals move with them.
 | `include_level_clears` | on | clearing each of levels 1-10 is a location |
 | `shop_upgrade_tiers` | 20 | tiers each hub shop sells, 15-30 |
 | `shop_price_step` | 25 | coins the price climbs per tier already bought |
-| `shop_price_cliff` | 25 | extra coins-per-tier added every 10 tiers |
+| `shop_price_cliff` | 0 | extra coins-per-tier added every 10 tiers (25 = vanilla) |
 | `level_locks` | on | levels 2-11 need `Progressive Level Access` |
 | `shrine_checks` | 5 | shrines per level that also check a location, 0-10 (0 = off) |
 | `trap_fill` | 0 | percent of leftover filler slots that become traps |
 | `death_link` | off | standard Archipelago DeathLink |
+| `death_amnesty_multiplier` | 0 | send only one death in every N, 0-100 (0/1 = send them all) |
+| `death_amnesty_buffer` | 0 | swallow the first N deaths outright, 0-100 |
 
-The two price settings reproduce vanilla at their defaults: the Nth upgrade
-from a shop costs `N * (step + floor(N / 10) * cliff)`. Vanilla's price wall is
-that cliff, and it fires every **ten** tiers rather than fifteen — with the old
-15-tier cap it therefore hit exactly once, at tier 10. Set `shop_price_cliff`
-to 0 for a straight line.
+The Nth upgrade from a shop costs `N * (step + floor(N / 10) * cliff)`.
+Vanilla's price wall is that cliff, and it fires every **ten** tiers rather
+than fifteen — with vanilla's 15-tier cap it hit exactly once, at tier 10, but
+Archipelago's shops are deeper than that, so it defaults to 0 here and the
+curve is a straight line. Set it to 25 for the vanilla wall.
+
+**Death amnesty** thins out what a roguelite's death rate would otherwise do
+to the rest of the multiworld. The buffer is a one-off grace period — the first
+N deaths of the whole multiworld, not per session — and after it the multiplier
+sends one death in every N. Both are send-side only: every DeathLink other
+worlds send still kills your hero, and a death an incoming DeathLink caused
+never counts toward your own tally.
 
 ---
 

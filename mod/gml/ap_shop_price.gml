@@ -12,9 +12,11 @@
 //     global.dprice = 25 + floor(dlevel / 10) * 25
 //     cost          = dlevel * global.dprice
 //
-// With the default step of 25, cliff of 25 and interval of 10 this reproduces
-// vanilla's numbers exactly. The yaml can flatten the cliff to 0 for a purely
-// linear climb, or steepen either term.
+// A step of 25, cliff of 25 and interval of 10 reproduces vanilla's numbers
+// exactly, but the cliff DEFAULTS to 0 here: vanilla's 15-tier cap let it fire
+// once, and Archipelago's deeper shops (20 tiers by default, up to 30) would
+// fire it two or three times. The yaml can set it back to 25 for the vanilla
+// wall, or steepen either term.
 
 if (!global.ap_enabled)
 {

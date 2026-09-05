@@ -9,7 +9,7 @@ global.ap_final_level = 11;
 global.ap_max_shop_tier = 30;
 global.ap_shop_tiers = 20;
 global.ap_shop_price_step = 25;
-global.ap_shop_price_cliff = 25;
+global.ap_shop_price_cliff = 0;
 global.ap_shop_cliff_every = 10;
 // Level locks default ON, matching the option's default, so a game
 // that somehow never sees slot_data still behaves like the yaml says.
@@ -18,10 +18,15 @@ global.ap_max_shrines = 10;
 global.ap_shrine_checks = 5;
 global.ap_shrine_levels = 10;
 global.ap_death_link = 0;
+// DeathLink amnesty: send one death in every ap_death_amnesty,
+// after the first ap_death_buffer have been swallowed outright.
+global.ap_death_amnesty = 0;
+global.ap_death_buffer = 0;
+global.ap_max_death_amnesty = 100;
 // Which build of the mod this is. ap_draw puts it on screen and ap_boot
 // logs it, so 'am I running what I just patched?' is answerable without
 // guessing from behaviour.
-global.ap_build = "v0.3.1 dev 2026-08-27 (71eceb7-dirty)";
+global.ap_build = "v0.3.2 dev 2026-08-28 (4893560-dirty)";
 
 // skill group: 0=trait 1=power1 2=power2
 global.ap_skill_count[0] = 20;

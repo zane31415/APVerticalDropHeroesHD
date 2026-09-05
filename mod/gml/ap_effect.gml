@@ -17,7 +17,17 @@ var is_trap = argument2;
 
 if (kind == "coins")
 {
-    var gain = 25 * max(1, global.enemyLevel);
+    // Sized on the deepest level cleared plus one -- the level this slot is
+    // working on -- and NOT on global.enemyLevel, which is wherever the hero
+    // happens to be standing. On enemyLevel the same item was worth 25 coins
+    // if it arrived in the village and 275 if it arrived on the way down, so
+    // its value was set by the timing of another world's check rather than by
+    // anything the player had done. See ap_reach.
+    //
+    // 25 per level is also exactly the price of that tier at the default shop
+    // step, so a cache is "one more upgrade at the depth you are playing".
+    var reach = min(global.ap_final_level, global.ap_depth + 1);
+    var gain = 25 * reach;
     global.coins += gain;
     ap_log(nm + ": +" + string(gain) + " coins");
     exit;

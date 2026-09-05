@@ -94,11 +94,10 @@ class VDHWorld(World):
         # Whatever is left over is filler, of which some percentage is traps.
         # Traps only ever displace filler, never anything that carries power.
         traps = remaining * int(self.options.trap_fill) // 100
-        trap_names = [n for n, d in item_table.items() if d.meta.get("trap")]
-        if not trap_names:
+        if not any(d.meta.get("trap") for d in item_table.values()):
             traps = 0
         for _ in range(traps):
-            pool.append(self.create_item(self.random.choice(trap_names)))
+            pool.append(self.create_item(self._weighted_name("trap")))
         for _ in range(remaining - traps):
             pool.append(self.create_item(self.get_filler_item_name()))
 
@@ -107,9 +106,24 @@ class VDHWorld(World):
     def set_rules(self) -> None:
         set_rules(self, self.options)
 
+    def _weighted_name(self, meta_key: str) -> str:
+        """One name from `meta_key`'s items, drawn against defs' weights.
+
+        The weights live in defs.FILLERS/defs.TRAPS so that the id tables and
+        the drop rates are the same file; nothing on the GML side reads them.
+        Falls back to FILLER_NAME rather than raising, because core Archipelago
+        calls get_filler_item_name for its own purposes and an exception there
+        fails generation for the whole multiworld.
+        """
+        pairs = [(n, d.meta.get("weight", 1))
+                 for n, d in item_table.items() if d.meta.get(meta_key)]
+        if not pairs:
+            return FILLER_NAME
+        names, weights = zip(*pairs)
+        return self.random.choices(names, weights=weights, k=1)[0]
+
     def get_filler_item_name(self) -> str:
-        names = [n for n, d in item_table.items() if d.meta.get("filler")]
-        return self.random.choice(names) if names else FILLER_NAME
+        return self._weighted_name("filler")
 
     def fill_slot_data(self) -> Dict[str, Any]:
         # The game reads this on ap_slot_connected and reconfigures itself from
@@ -126,4 +140,6 @@ class VDHWorld(World):
             "level_locks": int(bool(self.options.level_locks)),
             "shrine_checks": int(self.options.shrine_checks),
             "death_link": int(bool(self.options.death_link)),
+            "death_amnesty_multiplier": int(self.options.death_amnesty_multiplier),
+            "death_amnesty_buffer": int(self.options.death_amnesty_buffer),
         }

@@ -76,6 +76,12 @@ if (src == "ap_location_info")
     var locs = external_call(global.ext_ap_json_proxy, 0, "locations");
     var items = external_call(global.ext_ap_json_proxy, 0, "items");
     var plrs = external_call(global.ext_ap_json_proxy, 0, "players");
+    // Archipelago's item classification, one bitmask per location: 1
+    // progression, 2 useful, 4 trap, 0 filler. It is what colours the "AP:"
+    // line in the info bar, and it is only ever decoration -- an older DLL
+    // that does not send the array leaves every location at 0, which reads as
+    // filler and is exactly the uncoloured behaviour this replaced.
+    var flags = external_call(global.ext_ap_json_proxy, 0, "flags");
     if (locs >= 0 && items >= 0)
     {
         for (var i = 0; i < n; i += 1)
@@ -93,10 +99,20 @@ if (src == "ap_location_info")
             if (off >= 0 && off < global.ap_loc_count)
             {
                 global.ap_scout[off] = nm;
+                global.ap_scout_flag[off] = 0;
+                if (flags >= 0)
+                {
+                    global.ap_scout_flag[off] =
+                        external_call(global.ext_ap_json_number_at, flags, string(i));
+                }
             }
         }
     }
-    ap_debug("scout results stored: " + string(n));
+    // The flags proxy is reported because it is the one part of this reply
+    // that can be missing: -1 means the DLL sent no classification array and
+    // every item name will draw in the plain filler colour.
+    ap_debug("scout results stored: " + string(n) +
+             " (flags proxy=" + string(flags) + ")");
     // Any Merchant standing on screen was stocked before this reply landed and
     // is showing the "Unlock N" placeholder. Now it can say what it holds.
     ap_merchant_restock();

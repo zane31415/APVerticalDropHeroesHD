@@ -186,6 +186,16 @@ shrines (the shortcut crystal and the quest tablet), which is what
 every info-bar target in the game and an exclusion list would annotate half of
 it.
 
+**The info bar's item name is drawn separately from its description.** One
+`draw_text_ext` can only be one colour, and the "AP:" line is coloured by what
+Archipelago says the item is -- red trap, yellow progression, blue useful,
+white filler. So `ap_desc_suffix` returns the description and *publishes* the
+AP line in `global.ap_desc_line` / `global.ap_desc_flags`, and `ap_desc_draw`
+(which replaced the vanilla draw call outright) draws both. The flags come from
+the `flags` array in the scout reply, stored beside the name in
+`global.ap_scout_flag`; a reply without them leaves 0, which reads as filler
+and renders exactly as the uncoloured version did.
+
 Shrine *spawning* is untouched. A level that has spent all its Archipelago
 slots still grows shrines, and they still work -- `ap_shrine_check` just
 returns early. Gating `place_tiles` as well was the wrong instinct: the
@@ -368,6 +378,14 @@ amount of fixing things inside the file will help.
   DeathLink caused never sends one back; the test for that is
   `global.death_cause == global.ap_dl_cause` rather than a flag, so nothing has
   to remember to clear it.
+- **Death amnesty** filters the send side only. `death_amnesty_buffer`
+  swallows the first N deaths outright and `death_amnesty_multiplier` then
+  sends one death in every N; the count lives in `[Progress]` in
+  `archipelago.ini` under the same seed+slot key as the item high-water mark,
+  because a counter held in memory would hand out the whole buffer again every
+  time the player quit to the menu. It sits *after* the "was this itself a
+  DeathLink" test in `ap_death`, so deaths another world inflicted never eat
+  the player's own allowance.
 - **Level locks** divert the descent at the one place it happens: the portal
   countdown reaching zero in obGameControl's Step. The village Teleportation
   Shrine is a *second* way down that never touches a portal, and it is capped

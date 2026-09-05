@@ -17,7 +17,7 @@ GAME_NAME = "Vertical Drop Heroes HD"
 # checked against this at package time, gen_gml.py bakes it into the game as
 # global.ap_build, and package.py stamps it into the patcher's BUILD.txt. A
 # release where those three disagree is a release nobody can debug.
-WORLD_VERSION = "0.3.1"
+WORLD_VERSION = "0.3.2"
 
 # The Archipelago this world is developed and generated against.
 MIN_AP_VERSION = "0.6.7"
@@ -85,8 +85,7 @@ MIN_SHOP_TIERS = 15
 MAX_SHOP_TIERS = 30
 DEFAULT_SHOP_TIERS = 20
 
-# Vanilla pricing, kept as the defaults so an unconfigured yaml plays exactly
-# as the game always did:
+# Vanilla pricing is:
 #
 #   global.dprice = 25 + floor(dlevel / 10) * 25
 #   cost          = dlevel * global.dprice
@@ -96,9 +95,14 @@ DEFAULT_SHOP_TIERS = 20
 # every ten tiers, not fifteen -- with the vanilla 15-tier cap it therefore
 # fires exactly once, at tier 10, which is what makes the back half of a shop
 # feel like a wall.
+#
+# The step is kept at the vanilla 25; the cliff defaults to 0. Archipelago
+# raises the tier count above vanilla's 15 (default 20, up to 30), so the
+# cliff would fire two or three times instead of once and price the back half
+# of every shop out of a run's reach. Set it back to 25 for the vanilla curve.
 SHOP_PRICE_CLIFF_EVERY = 10
 DEFAULT_SHOP_PRICE_STEP = 25
-DEFAULT_SHOP_PRICE_CLIFF = 25
+DEFAULT_SHOP_PRICE_CLIFF = 0
 
 # --- levels -----------------------------------------------------------------
 # global.mapArray[1..11]; enemy_boss[11] == "Chosen One" is the finale.
@@ -144,21 +148,44 @@ SHRINE_LEVELS = list(range(1, 11))   # levels 1..10, same as CLEAR_LEVELS
 LEVEL_ITEM_NAME = "Progressive Level Access"
 ACCESS_LEVELS = list(range(2, FINAL_LEVEL + 1))
 
+# --- DeathLink amnesty -------------------------------------------------------
+# Vertical Drop Heroes is a roguelite: a hero dies every few minutes by design,
+# which makes an unfiltered DeathLink a firehose pointed at the rest of the
+# multiworld. Amnesty thins it out, entirely on the client side -- the server
+# never hears about a death that amnesty swallowed.
+#
+#   multiplier N  send one death in every N (0 and 1 both mean "send them all")
+#   buffer B      swallow the first B deaths outright, then apply the multiplier
+#
+# The counter is per seed+slot and persists in archipelago.ini, so it survives
+# quitting the game; deaths inflicted BY an incoming DeathLink never count
+# toward it, because those are not the player's own deaths to ration.
+MAX_DEATH_AMNESTY = 100
+DEFAULT_DEATH_AMNESTY = 0
+DEFAULT_DEATH_AMNESTY_BUFFER = 0
+
 # --- filler and traps --------------------------------------------------------
-# (name, effect key). The effect key is what the GML dispatches on, so adding
-# one here plus a branch in gml/ap_effect.gml is the whole job.
+# (name, effect key, weight). The effect key is what the GML dispatches on, so
+# adding one here plus a branch in gml/ap_effect.gml is the whole job.
+#
+# The weight is relative, within filler and within traps separately -- filler
+# never competes with traps for a slot, because `trap_fill` has already decided
+# how many of the leftover slots are which. It exists so the two interesting
+# fillers turn up twice as often as the two housekeeping ones: a Coin Cache or
+# a Shrine Boost is a thing that happens to your run, while a Mana Refill or a
+# Skeleton Key is a small convenience.
 #
 # Everything except Coin Cache needs a living hero, so ap_effect queues those
 # and ap_consume drains the queue on the first frame that has one. Coins are a
 # global that persists across runs, so they land immediately.
 FILLERS = [
-    ("Coin Cache",   "coins"),
-    ("Shrine Boost", "shrine"),
-    ("Mana Refill",  "mana"),
-    ("Skeleton Key", "key"),
+    ("Coin Cache",   "coins",  2),
+    ("Shrine Boost", "shrine", 2),
+    ("Mana Refill",  "mana",   1),
+    ("Skeleton Key", "key",    1),
 ]
 TRAPS = [
-    ("Alarm Trap", "alarm"),
+    ("Alarm Trap", "alarm", 1),
 ]
 FILLER_NAME = FILLERS[0][0]
 
@@ -219,12 +246,12 @@ def build_items():
                 len(SHORTCUT_LEVELS), {"shortcut": True}))
     out.append((LEVEL_ITEM_NAME, nxt(), "progression",
                 len(ACCESS_LEVELS), {"level_access": True}))
-    for name, effect in FILLERS:
+    for name, effect, weight in FILLERS:
         out.append((name, nxt(), "filler", 0,
-                    {"filler": True, "effect": effect}))
-    for name, effect in TRAPS:
+                    {"filler": True, "effect": effect, "weight": weight}))
+    for name, effect, weight in TRAPS:
         out.append((name, nxt(), "trap", 0,
-                    {"trap": True, "effect": effect}))
+                    {"trap": True, "effect": effect, "weight": weight}))
     return out
 
 

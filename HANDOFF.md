@@ -1,13 +1,15 @@
 # Vertical Drop Heroes HD — Archipelago mod: handoff
 
 Context dump for continuing this work in a fresh session. Written 2026-08-19,
-updated 2026-08-27 for **v0.3.1**.
+updated 2026-08-28 for **v0.3.2**.
 
-**Status: released.** v0.2.0 was the first public release; v0.3.0 and v0.3.1
-are built on what live play turned up. DeathLink is confirmed working in both
+**Status: released.** v0.2.0 was the first public release; everything since is
+built on what live play turned up. DeathLink is confirmed working in both
 directions, a Merchant sale now names the item it actually bought, coins and
 keys no longer follow the player from one multiworld into the next, and a run
-can be ended from the pause menu without dying for it.
+can be ended from the pause menu without dying for it. v0.3.2 adds DeathLink
+amnesty, colours the item name in the info bar by its Archipelago
+classification, and drops the default shop price cliff to 0.
 
 `defs.WORLD_VERSION` is the single source of truth for the version.
 `archipelago.json` is checked against it at package time and the build refuses
@@ -427,6 +429,29 @@ filler slots that become traps, so traps never displace anything with power in
 it. Adding another is a line in `defs.FILLERS`/`defs.TRAPS` plus a branch in
 `gml/ap_effect.gml`.
 
+Each entry carries a **weight** (relative within filler, and within traps
+separately -- the two never compete, because `trap_fill` has already split the
+slots). Coin Cache and Shrine Boost are 2, Mana Refill and Skeleton Key are 1,
+so the two that change a run turn up twice as often as the two that tidy one
+up. `_weighted_name()` in `__init__.py` is the only reader; nothing on the GML
+side knows weights exist.
+
+A **Coin Cache is 25 coins per level, sized on `global.ap_depth + 1`** -- the
+deepest level this slot has ever *cleared*, plus one. It used to scale on
+`global.enemyLevel`, which made the same item worth 25 coins in the village and
+275 on the way down: its value was set by when another world happened to check
+a location, not by anything the player had done. `ap_reach` maintains the mark
+from two places, because neither covers every slot on its own --
+`ap_level_cleared` (every portal, *before* the `clears_on` bail, so it works
+with the category off) and `ap_mark_sent` (the clear locations the server
+replays on connect, which is what restores it on a machine that has never
+played this slot). It persists in `[Progress]` under `<key>|depth` for the same
+reason the death count does: in memory it would reset to 0 on every quit to the
+menu and every later Coin Cache would pay a level-1 rate.
+
+25 per level is also exactly the price of that tier at the default shop step,
+so a cache reads as "one more upgrade at the depth you are playing".
+
 At the defaults that is 181 locations and 130 non-filler items.
 
 ### Logic — two linear curves at `shop_tiers / 10` tiers per level
@@ -456,7 +481,8 @@ of each shop, and Level 1 Cleared.
 
 Options: `include_shortcuts`, `include_level_clears`, `shop_upgrade_tiers`,
 `shop_price_step`, `shop_price_cliff`, `level_locks`, `shrine_checks`,
-`trap_fill`, `death_link`. They reach
+`trap_fill`, `death_link`, `death_amnesty_multiplier`,
+`death_amnesty_buffer`. They reach
 the game through `slot_data`, read once in `ap_slot_data` from the
 `ap_slot_connected` branch of `ap_dispatch` -- proxy 0 is that event's argument
 and stops being it on the next `poll()`.
@@ -473,8 +499,37 @@ borrowing `global.dprice` (which obGameControl's Step recomputes from the
 cost(tier) = tier * (shop_price_step + floor(tier / 10) * shop_price_cliff)
 ```
 
-Defaults 25 / 25 / every 10 reproduce vanilla exactly. The cliff is every ten
-tiers, not fifteen -- with the old 15-tier cap it fired once, at tier 10.
+25 / 25 / every 10 reproduces vanilla exactly, but the cliff now **defaults to
+0**. It is every ten tiers, not fifteen -- with vanilla's 15-tier cap it fired
+once, at tier 10, while Archipelago's default 20 tiers (up to 30) makes it fire
+two or three times and prices the back half of every shop out of reach.
+
+### The info bar
+
+`ap_desc_draw` **replaced** obInfoBar's `draw_text_ext` of the description
+rather than wrapping it, because one draw call can only be one colour and the
+"AP: <item>" line is coloured by what the item is -- red trap, yellow
+progression, blue useful, white filler, plain white for "sold out" and "(not
+scouted yet)". `ap_desc_suffix` therefore returns the description and
+*publishes* the AP line in `global.ap_desc_line` / `global.ap_desc_flags`;
+those two globals are live only for the frame that set them and nothing but
+`ap_desc_draw` should read them.
+
+The offset reproduces the old single string exactly: every AP line was joined
+on with `##`, so it is `string_height_ext(body, 20, 450) + 20` below the
+description, at the same separation and wrap width the draw uses.
+
+The flags are Archipelago's classification bitmask (1 progression, 2 useful,
+4 trap, 0 filler), read from the `flags` array of the scout reply in
+`ap_dispatch` and stored beside the name in `global.ap_scout_flag`. A reply
+without that array leaves every entry at 0, which reads as filler and renders
+exactly as the uncoloured version did. Colours are `make_color_rgb`, not the
+`c_*` constants, and the blue is lightened a long way past `c_blue` -- the info
+bar draws white on a dark panel (`draw_fchv(2, 16777215, ...)`), where pure
+blue is barely legible.
+
+The Merchant's *sign* (`obDecor.longtext2`, written by `set_merchant`) is
+vanilla decor drawing and is still uncoloured.
 
 ### Shrines
 
@@ -533,6 +588,16 @@ A refused descent (`ap_to_village`) is deliberately *not* a death and sends
 nothing: `ap_death` hangs off `global.deadCount == 40`, deadCount only climbs
 while gHero is missing and `selectScreen` is 0, and the village rebuild zeroes
 the first and sets the second. The hero is retired, not killed.
+
+**Amnesty.** `death_amnesty_buffer` swallows the first B deaths outright;
+after that `death_amnesty_multiplier` sends one death in every N (0 and 1 both
+mean all of them). It filters only the send side -- an incoming DeathLink still
+kills the hero -- and it sits *after* the "was this itself a DeathLink" test,
+so a death another world inflicted never spends the player's allowance. The
+count is persisted in `[Progress]` in `archipelago.ini` under
+`<key>|deaths`, beside the item high-water mark and on the same seed+slot key:
+in memory it would hand out the entire buffer again on every quit to the menu.
+`ap_progress_save` writes both marks together.
 
 Send: `global.deadCount == 40` in obGameControl's Step. An equality, so exactly
 one frame per run, and after Phoenix has had its revive. The sentence names

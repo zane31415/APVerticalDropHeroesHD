@@ -2,9 +2,11 @@ from dataclasses import dataclass
 
 from Options import DeathLink, DefaultOnToggle, PerGameCommonOptions, Range
 
-from .defs import (DEFAULT_SHOP_PRICE_CLIFF, DEFAULT_SHOP_PRICE_STEP,
-                   DEFAULT_SHOP_TIERS, DEFAULT_SHRINE_CHECKS, MAX_SHOP_TIERS,
-                   MAX_SHRINES_PER_LEVEL, MIN_SHOP_TIERS)
+from .defs import (DEFAULT_DEATH_AMNESTY, DEFAULT_DEATH_AMNESTY_BUFFER,
+                   DEFAULT_SHOP_PRICE_CLIFF, DEFAULT_SHOP_PRICE_STEP,
+                   DEFAULT_SHOP_TIERS, DEFAULT_SHRINE_CHECKS,
+                   MAX_DEATH_AMNESTY, MAX_SHOP_TIERS, MAX_SHRINES_PER_LEVEL,
+                   MIN_SHOP_TIERS)
 
 
 class IncludeShortcuts(DefaultOnToggle):
@@ -54,8 +56,11 @@ class ShopPriceCliff(Range):
     """Extra coins-per-tier added every 10 tiers bought.
 
     Vanilla raises the per-tier rate by 25 for every 10 upgrades you already
-    own, which is the sudden price wall in the back half of a shop. Set this
-    to 0 for a purely linear curve, or higher to make depth hurt more.
+    own, which is the sudden price wall in the back half of a shop. It could
+    only fire once at vanilla's 15-tier cap; with Archipelago's deeper shops
+    it fires two or three times, so the default here is 0 -- a purely linear
+    curve. Set it to 25 for the vanilla wall, or higher to make depth hurt
+    more.
     """
     display_name = "Shop Price Cliff"
     range_start = 0
@@ -106,6 +111,39 @@ class TrapFill(Range):
     default = 0
 
 
+class DeathAmnestyMultiplier(Range):
+    """Send only one DeathLink out of every this many deaths.
+
+    Vertical Drop Heroes is a roguelite and a hero dies every few minutes, so
+    an unfiltered DeathLink is a firehose pointed at the rest of the
+    multiworld. At 5, four deaths are yours alone and the fifth is everyone's.
+
+    0 and 1 both mean every death is sent. Deaths that an incoming DeathLink
+    caused never count toward this -- only deaths you earned yourself.
+
+    Has no effect unless death_link is on, and it filters only what you SEND:
+    every DeathLink other worlds send still kills your hero.
+    """
+    display_name = "Death Amnesty Multiplier"
+    range_start = 0
+    range_end = MAX_DEATH_AMNESTY
+    default = DEFAULT_DEATH_AMNESTY
+
+
+class DeathAmnestyBuffer(Range):
+    """Send nothing at all for this many deaths, once per multiworld.
+
+    Grace while you are learning the game: the first this many deaths are
+    swallowed outright, and only afterwards does the multiplier start counting.
+    The count is per seed and slot and survives quitting the game, so it is a
+    one-off allowance for the whole multiworld, not a fresh one per session.
+    """
+    display_name = "Death Amnesty Buffer"
+    range_start = 0
+    range_end = MAX_DEATH_AMNESTY
+    default = DEFAULT_DEATH_AMNESTY_BUFFER
+
+
 @dataclass
 class VDHOptions(PerGameCommonOptions):
     include_shortcuts: IncludeShortcuts
@@ -117,3 +155,5 @@ class VDHOptions(PerGameCommonOptions):
     shrine_checks: ShrineChecks
     trap_fill: TrapFill
     death_link: DeathLink
+    death_amnesty_multiplier: DeathAmnestyMultiplier
+    death_amnesty_buffer: DeathAmnestyBuffer
